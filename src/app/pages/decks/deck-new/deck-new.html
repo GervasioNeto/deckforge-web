@@ -1,0 +1,56 @@
+<div class="max-w-md">
+  <a routerLink="/decks" class="text-sm text-text-muted hover:text-text">&larr; Meus Decks</a>
+  <h1 class="mt-2 mb-6 text-2xl font-bold">Novo deck</h1>
+
+  <form
+    [formGroup]="form"
+    (ngSubmit)="submit()"
+    class="space-y-4 rounded-lg border border-border bg-surface p-6"
+  >
+    <div>
+      <label for="name" class="mb-1 block text-sm text-text-muted">Nome</label>
+      <input
+        id="name"
+        type="text"
+        formControlName="name"
+        class="w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-cyan"
+      />
+    </div>
+
+    <div>
+      <label for="game" class="mb-1 block text-sm text-text-muted">Jogo</label>
+      <select
+        id="game"
+        formControlName="game"
+        class="w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-cyan"
+      >
+        <option value="mtg">Magic: The Gathering</option>
+        <option value="pokemon">Pokémon</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="visibility" class="mb-1 block text-sm text-text-muted">Visibilidade</label>
+      <select
+        id="visibility"
+        formControlName="visibility"
+        class="w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-cyan"
+      >
+        <option value="private">Privado</option>
+        <option value="public">Público</option>
+      </select>
+    </div>
+
+    @if (errorMessage()) {
+      <p class="text-sm text-purple">{{ errorMessage() }}</p>
+    }
+
+    <button
+      type="submit"
+      [disabled]="loading()"
+      class="w-full rounded-md bg-gradient-brand px-3 py-2 font-medium text-bg transition-opacity hover:opacity-90 disabled:opacity-50"
+    >
+      {{ loading() ? 'Criando...' : 'Criar deck' }}
+    </button>
+  </form>
+</div>

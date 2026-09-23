@@ -1,0 +1,47 @@
+<div class="mx-auto max-w-sm">
+  <h1 class="mb-1 text-2xl font-bold">Entrar</h1>
+  <p class="mb-6 text-sm text-text-muted">Acesse sua conta para gerenciar seus decks.</p>
+
+  <form
+    [formGroup]="form"
+    (ngSubmit)="submit()"
+    class="space-y-4 rounded-lg border border-border bg-surface p-6"
+  >
+    <div>
+      <label for="email" class="mb-1 block text-sm text-text-muted">E-mail</label>
+      <input
+        id="email"
+        type="email"
+        formControlName="email"
+        class="w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-cyan"
+      />
+    </div>
+
+    <div>
+      <label for="password" class="mb-1 block text-sm text-text-muted">Senha</label>
+      <input
+        id="password"
+        type="password"
+        formControlName="password"
+        class="w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-cyan"
+      />
+    </div>
+
+    @if (errorMessage()) {
+      <p class="text-sm text-purple">{{ errorMessage() }}</p>
+    }
+
+    <button
+      type="submit"
+      [disabled]="loading()"
+      class="w-full rounded-md bg-gradient-brand px-3 py-2 font-medium text-bg transition-opacity hover:opacity-90 disabled:opacity-50"
+    >
+      {{ loading() ? 'Entrando...' : 'Entrar' }}
+    </button>
+  </form>
+
+  <p class="mt-4 text-sm text-text-muted">
+    Não tem conta?
+    <a routerLink="/cadastro" class="text-cyan hover:underline">Cadastre-se</a>
+  </p>
+</div>
