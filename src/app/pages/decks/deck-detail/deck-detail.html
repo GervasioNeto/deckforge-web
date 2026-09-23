@@ -1,0 +1,66 @@
+<div class="space-y-8">
+  <div>
+    <a routerLink="/decks" class="text-sm text-text-muted hover:text-text">&larr; Meus Decks</a>
+    <h1 class="mt-2 text-2xl font-bold">Deck {{ deckId }}</h1>
+    <p class="mt-1 text-sm text-text-muted">
+      O detalhe completo do deck (GET /api/decks/:deckId) ainda não está disponível no backend
+      (task #37). As cartas abaixo refletem apenas o que foi adicionado nesta sessão.
+    </p>
+  </div>
+
+  <section>
+    <h2 class="mb-3 text-lg font-semibold">Cartas no deck</h2>
+    @if (deckCards().length === 0) {
+      <p class="text-text-muted">Nenhuma carta adicionada nesta sessão ainda.</p>
+    } @else {
+      <ul class="grid gap-3 sm:grid-cols-2">
+        @for (card of deckCards(); track card.cardId) {
+          <li class="rounded-lg border border-border bg-surface p-3">{{ card.name }}</li>
+        }
+      </ul>
+    }
+  </section>
+
+  <section>
+    <h2 class="mb-3 text-lg font-semibold">Adicionar carta</h2>
+    <form (ngSubmit)="search()" class="flex gap-2">
+      <input
+        type="text"
+        [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event)"
+        name="searchTerm"
+        placeholder="Nome da carta"
+        class="flex-1 rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-cyan"
+      />
+      <button
+        type="submit"
+        [disabled]="searching()"
+        class="rounded-md bg-gradient-brand px-4 py-2 text-sm font-medium text-bg transition-opacity hover:opacity-90 disabled:opacity-50"
+      >
+        Buscar
+      </button>
+    </form>
+
+    @if (searchError()) {
+      <p class="mt-2 text-sm text-purple">{{ searchError() }}</p>
+    }
+    @if (feedback()) {
+      <p class="mt-2 text-sm text-cyan">{{ feedback() }}</p>
+    }
+
+    @if (searchResults().length > 0) {
+      <ul class="mt-4 grid gap-3 sm:grid-cols-2">
+        @for (card of searchResults(); track card.id) {
+          <li
+            class="flex items-center justify-between rounded-lg border border-border bg-surface p-3"
+          >
+            <span>{{ card.name }}</span>
+            <button type="button" (click)="addCard(card)" class="text-xs text-cyan hover:underline">
+              + adicionar
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+</div>

@@ -1,0 +1,20 @@
+<div class="max-w-md">
+  <h1 class="mb-6 text-2xl font-bold">Perfil</h1>
+
+  @if (loading()) {
+    <p class="text-text-muted">Carregando...</p>
+  } @else if (errorMessage()) {
+    <p class="text-purple">{{ errorMessage() }}</p>
+  } @else if (user(); as u) {
+    <div class="space-y-3 rounded-lg border border-border bg-surface p-6">
+      <div>
+        <p class="text-xs uppercase tracking-wide text-text-muted">E-mail</p>
+        <p class="text-text">{{ u.email }}</p>
+      </div>
+      <div>
+        <p class="text-xs uppercase tracking-wide text-text-muted">ID</p>
+        <p class="text-text-muted">{{ u.id }}</p>
+      </div>
+    </div>
+  }
+</div>

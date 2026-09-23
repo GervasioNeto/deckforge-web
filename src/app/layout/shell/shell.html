@@ -1,0 +1,51 @@
+<div class="min-h-screen bg-bg text-text flex flex-col">
+  <header class="border-b border-border">
+    <div class="mx-auto max-w-5xl flex items-center justify-between px-4 py-4">
+      <a routerLink="/decks" class="text-xl font-bold text-gradient tracking-tight"> DeckForge </a>
+
+      <nav class="flex items-center gap-6 text-sm">
+        @if (auth.isAuthenticated()) {
+          <a
+            routerLink="/decks"
+            routerLinkActive="text-cyan"
+            class="text-text-muted transition-colors hover:text-text"
+          >
+            Meus Decks
+          </a>
+          <a
+            routerLink="/perfil"
+            routerLinkActive="text-cyan"
+            class="text-text-muted transition-colors hover:text-text"
+          >
+            Perfil
+          </a>
+          <button
+            type="button"
+            (click)="logout()"
+            class="rounded-md border border-border px-3 py-1.5 text-text-muted transition-colors hover:border-purple hover:text-text"
+          >
+            Sair
+          </button>
+        } @else {
+          <a
+            routerLink="/login"
+            routerLinkActive="text-cyan"
+            class="text-text-muted transition-colors hover:text-text"
+          >
+            Entrar
+          </a>
+          <a
+            routerLink="/cadastro"
+            class="rounded-md bg-gradient-brand px-3 py-1.5 font-medium text-bg transition-opacity hover:opacity-90"
+          >
+            Cadastre-se
+          </a>
+        }
+      </nav>
+    </div>
+  </header>
+
+  <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
+    <router-outlet />
+  </main>
+</div>
