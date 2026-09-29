@@ -1,0 +1,71 @@
+<form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4">
+  <div class="grid gap-4 sm:grid-cols-2">
+    <div>
+      @let nameInvalid = form.controls.displayName.invalid && form.controls.displayName.touched;
+      <label for="display-name" class="mb-1 block text-sm text-text-muted">Nome</label>
+      <input
+        id="display-name"
+        type="text"
+        autocomplete="name"
+        formControlName="displayName"
+        placeholder="Como quer ser chamado"
+        [attr.maxlength]="nameMaxLength"
+        [attr.aria-invalid]="nameInvalid"
+        [attr.aria-describedby]="nameInvalid ? 'display-name-error' : null"
+        class="w-full rounded-md border bg-bg px-3 py-2 text-text outline-none placeholder:text-text-muted/60 focus:border-cyan"
+        [class.border-border]="!nameInvalid"
+        [class.border-purple]="nameInvalid"
+      />
+      @if (nameInvalid) {
+        <p id="display-name-error" class="mt-1 text-sm text-purple">
+          O nome pode ter no máximo {{ nameMaxLength }} caracteres.
+        </p>
+      }
+    </div>
+
+    <div>
+      @let emailInvalid = form.controls.email.invalid && form.controls.email.touched;
+      <label for="profile-email" class="mb-1 block text-sm text-text-muted">E-mail</label>
+      <input
+        id="profile-email"
+        type="email"
+        autocomplete="email"
+        formControlName="email"
+        [attr.aria-invalid]="emailInvalid"
+        aria-describedby="profile-email-hint"
+        class="w-full rounded-md border bg-bg px-3 py-2 text-text outline-none focus:border-cyan"
+        [class.border-border]="!emailInvalid"
+        [class.border-purple]="emailInvalid"
+      />
+      @if (emailInvalid) {
+        <p id="profile-email-hint" class="mt-1 text-sm text-purple">Informe um e-mail válido.</p>
+      } @else {
+        <p id="profile-email-hint" class="mt-1 text-xs text-text-muted">
+          Ao trocar, o e-mail só muda depois que você confirmar pelo link que enviaremos.
+        </p>
+      }
+    </div>
+  </div>
+
+  @if (errorMessage()) {
+    <p role="alert" class="text-sm text-purple">{{ errorMessage() }}</p>
+  }
+
+  <div class="flex flex-wrap justify-end gap-2">
+    <button
+      type="button"
+      (click)="cancelled.emit()"
+      [disabled]="loading()"
+      class="rounded-md px-4 py-2 text-sm text-text-muted transition-colors hover:text-text disabled:opacity-50"
+    >
+      Cancelar
+    </button>
+    <button
+      type="submit"
+      [disabled]="loading()"
+      class="rounded-md bg-gradient-brand px-4 py-2 text-sm font-medium text-on-brand transition-opacity hover:opacity-90 disabled:opacity-50"
+    >
+      {{ loading() ? 'Salvando...' : 'Salvar' }}
+    </button>
+  </div>
+</form>

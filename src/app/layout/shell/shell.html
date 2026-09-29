@@ -1,9 +1,39 @@
 <div class="min-h-screen bg-bg text-text flex flex-col">
-  <header class="border-b border-border">
+  <header class="sticky top-0 z-30 border-b border-border bg-bg/80 backdrop-blur">
     <div class="mx-auto max-w-5xl flex items-center justify-between px-4 py-4">
-      <a routerLink="/decks" class="text-xl font-bold text-gradient tracking-tight"> DeckForge </a>
+      <a
+        [routerLink]="auth.isAuthenticated() ? '/decks' : '/login'"
+        class="flex items-center gap-2"
+      >
+        <img src="logo-icon.png" alt="" width="36" height="36" class="h-9 w-9" />
+        <span class="text-xl font-bold text-gradient tracking-tight">DeckForge</span>
+      </a>
 
-      <nav class="flex items-center gap-6 text-sm">
+      <nav class="flex items-center gap-4 text-sm sm:gap-6">
+        <button
+          type="button"
+          (click)="theme.toggle()"
+          [attr.aria-label]="theme.theme() === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'"
+          [title]="theme.theme() === 'dark' ? 'Modo claro' : 'Modo escuro'"
+          class="flex h-9 w-9 items-center justify-center rounded-full text-text-muted outline-none transition-colors hover:bg-surface hover:text-text focus-visible:ring-2 focus-visible:ring-cyan"
+        >
+          @if (theme.theme() === 'dark') {
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path
+                d="M10 2a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 10 2ZM10 15a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 10 15ZM10 7a3 3 0 1 0 0 6 3 3 0 0 0 0-6ZM15.657 5.404a.75.75 0 1 0-1.06-1.06l-1.061 1.06a.75.75 0 0 0 1.06 1.06l1.06-1.06ZM6.464 14.596a.75.75 0 1 0-1.06-1.06l-1.06 1.06a.75.75 0 0 0 1.06 1.06l1.06-1.06ZM18 10a.75.75 0 0 1-.75.75h-1.5a.75.75 0 0 1 0-1.5h1.5A.75.75 0 0 1 18 10ZM5 10a.75.75 0 0 1-.75.75h-1.5a.75.75 0 0 1 0-1.5h1.5A.75.75 0 0 1 5 10ZM14.596 15.657a.75.75 0 0 0 1.06-1.06l-1.06-1.061a.75.75 0 1 0-1.06 1.06l1.06 1.06ZM5.404 6.464a.75.75 0 0 0 1.06-1.06l-1.06-1.06a.75.75 0 1 0-1.061 1.06l1.06 1.06Z"
+              />
+            </svg>
+          } @else {
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path
+                fill-rule="evenodd"
+                d="M7.455 2.004a.75.75 0 0 1 .26.77 7 7 0 0 0 9.958 7.967.75.75 0 0 1 1.067.853A8.5 8.5 0 1 1 6.647 1.921a.75.75 0 0 1 .808.083Z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          }
+        </button>
+
         @if (auth.isAuthenticated()) {
           <a
             routerLink="/decks"
@@ -12,20 +42,57 @@
           >
             Meus Decks
           </a>
-          <a
-            routerLink="/perfil"
-            routerLinkActive="text-cyan"
-            class="text-text-muted transition-colors hover:text-text"
-          >
-            Perfil
-          </a>
-          <button
-            type="button"
-            (click)="logout()"
-            class="rounded-md border border-border px-3 py-1.5 text-text-muted transition-colors hover:border-purple hover:text-text"
-          >
-            Sair
-          </button>
+          <div #menuContainer class="relative" (focusout)="onMenuFocusOut($event)">
+            <button
+              #menuButton
+              type="button"
+              (click)="toggleMenu()"
+              [attr.aria-expanded]="menuOpen()"
+              aria-controls="user-menu"
+              aria-label="Menu da conta"
+              class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-brand font-bold text-on-brand outline-none ring-offset-2 ring-offset-bg transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-cyan"
+              [class.ring-2]="onProfilePage()"
+              [class.ring-cyan]="onProfilePage()"
+            >
+              {{ auth.initial() }}
+            </button>
+
+            @if (menuOpen()) {
+              <div
+                id="user-menu"
+                class="absolute right-0 z-20 mt-2 w-64 rounded-lg border border-border bg-surface p-1 shadow-lg shadow-black/40 light:shadow-black/10"
+              >
+                <div class="border-b border-border px-3 py-2">
+                  <p class="text-xs text-text-muted">Conectado como</p>
+                  @if (auth.displayName(); as name) {
+                    <p class="truncate font-medium text-text" [title]="name">{{ name }}</p>
+                    <p class="truncate text-xs text-text-muted" [title]="auth.currentUser()?.email ?? ''">
+                      {{ auth.currentUser()?.email }}
+                    </p>
+                  } @else {
+                    <p class="truncate text-text" [title]="auth.currentUser()?.email ?? ''">
+                      {{ auth.currentUser()?.email }}
+                    </p>
+                  }
+                </div>
+                <a
+                  routerLink="/perfil"
+                  routerLinkActive="text-cyan"
+                  (click)="menuOpen.set(false)"
+                  class="mt-1 block rounded-md px-3 py-2 text-text-muted transition-colors hover:bg-bg hover:text-text"
+                >
+                  Perfil
+                </a>
+                <button
+                  type="button"
+                  (click)="logout()"
+                  class="block w-full rounded-md px-3 py-2 text-left text-text-muted transition-colors hover:bg-bg hover:text-purple"
+                >
+                  Sair
+                </button>
+              </div>
+            }
+          </div>
         } @else {
           <a
             routerLink="/login"
@@ -36,7 +103,7 @@
           </a>
           <a
             routerLink="/cadastro"
-            class="rounded-md bg-gradient-brand px-3 py-1.5 font-medium text-bg transition-opacity hover:opacity-90"
+            class="rounded-md bg-gradient-brand px-3 py-1.5 font-medium text-on-brand transition-opacity hover:opacity-90"
           >
             Cadastre-se
           </a>

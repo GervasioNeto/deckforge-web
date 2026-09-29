@@ -2,7 +2,7 @@
   <h1 class="text-2xl font-bold">Meus Decks</h1>
   <a
     routerLink="/decks/novo"
-    class="rounded-md bg-gradient-brand px-4 py-2 text-sm font-medium text-bg transition-opacity hover:opacity-90"
+    class="rounded-md bg-gradient-brand px-4 py-2 text-sm font-medium text-on-brand transition-opacity hover:opacity-90"
   >
     + Novo deck
   </a>
@@ -45,7 +45,7 @@
     <p class="text-text-muted">Você ainda não tem nenhum deck.</p>
     <a
       routerLink="/decks/novo"
-      class="rounded-md bg-gradient-brand px-4 py-2 text-sm font-medium text-bg transition-opacity hover:opacity-90"
+      class="rounded-md bg-gradient-brand px-4 py-2 text-sm font-medium text-on-brand transition-opacity hover:opacity-90"
     >
       Criar meu primeiro deck
     </a>
@@ -95,7 +95,7 @@
                 type="button"
                 (click)="removeDeck(deck.id)"
                 [disabled]="deletingId() === deck.id"
-                class="rounded bg-purple px-2 py-1 font-medium text-text transition-opacity hover:opacity-90 disabled:opacity-50"
+                class="rounded bg-purple px-2 py-1 font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
               >
                 {{ deletingId() === deck.id ? 'Excluindo...' : 'Excluir' }}
               </button>

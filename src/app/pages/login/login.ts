@@ -3,6 +3,14 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Auth } from '../../core/auth/auth';
 
+const loginNotices: Record<string, string> = {
+  expired: 'Sua sessão expirou. Entre novamente.',
+  'signed-out': 'Sua sessão foi encerrada em outra aba ou dispositivo.',
+  'signed-out-everywhere': 'Você saiu de todos os dispositivos.',
+  'signed-out-partial':
+    'Você saiu deste dispositivo, mas não conseguimos encerrar as outras sessões. Entre e tente novamente.',
+};
+
 @Component({
   selector: 'app-login',
   imports: [ReactiveFormsModule, RouterLink],
@@ -16,6 +24,9 @@ export class Login {
 
   protected readonly loading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
+  /** Why the user was sent here, from the `reason` query param set on redirects. */
+  protected readonly notice =
+    loginNotices[this.route.snapshot.queryParamMap.get('reason') ?? ''] ?? null;
 
   protected readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],

@@ -1,20 +1,190 @@
-<div class="max-w-md">
-  <h1 class="mb-6 text-2xl font-bold">Perfil</h1>
+<h1 class="mb-6 text-2xl font-bold">Perfil</h1>
 
-  @if (loading()) {
-    <p class="text-text-muted">Carregando...</p>
-  } @else if (errorMessage()) {
-    <p class="text-purple">{{ errorMessage() }}</p>
-  } @else if (user(); as u) {
-    <div class="space-y-3 rounded-lg border border-border bg-surface p-6">
-      <div>
-        <p class="text-xs uppercase tracking-wide text-text-muted">E-mail</p>
-        <p class="text-text">{{ u.email }}</p>
+<div class="space-y-8">
+  <section aria-label="Conta">
+    @if (loading()) {
+      <p class="text-text-muted">Carregando...</p>
+    } @else if (errorMessage()) {
+      <div role="alert" class="flex flex-wrap items-center gap-3">
+        <p class="text-purple">{{ errorMessage() }}</p>
+        <button
+          type="button"
+          (click)="loadProfile()"
+          class="rounded-md border border-border px-3 py-1.5 text-sm text-text transition-colors hover:border-cyan"
+        >
+          Tentar novamente
+        </button>
       </div>
-      <div>
-        <p class="text-xs uppercase tracking-wide text-text-muted">ID</p>
-        <p class="text-text-muted">{{ u.id }}</p>
+    } @else if (user(); as u) {
+      <div class="rounded-lg border border-border bg-surface p-6">
+        <div class="flex items-center gap-4">
+          <div
+            class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-brand text-xl font-bold text-on-brand"
+            aria-hidden="true"
+          >
+            {{ initial() }}
+          </div>
+          <div class="min-w-0 flex-1">
+            @if (displayName(); as name) {
+              <p class="truncate text-lg font-medium text-text" [title]="name">{{ name }}</p>
+              <p class="truncate text-sm text-text-muted" [title]="u.email">{{ u.email }}</p>
+            } @else {
+              <p class="truncate text-lg font-medium text-text" [title]="u.email">{{ u.email }}</p>
+            }
+            <div class="mt-1">
+              @if (emailConfirmed()) {
+                <span class="rounded-full bg-cyan/15 px-2 py-0.5 text-xs font-medium text-cyan">
+                  E-mail verificado
+                </span>
+              } @else {
+                <span class="rounded-full bg-purple/15 px-2 py-0.5 text-xs font-medium text-purple">
+                  E-mail não verificado
+                </span>
+              }
+            </div>
+          </div>
+          @if (!editing()) {
+            <button
+              type="button"
+              (click)="startEditing()"
+              class="shrink-0 self-start rounded-md border border-border px-3 py-1.5 text-sm text-text transition-colors hover:border-cyan"
+            >
+              Editar perfil
+            </button>
+          }
+        </div>
+
+        @if (profileNotice(); as notice) {
+          <div
+            role="status"
+            class="mt-4 flex items-center justify-between gap-4 rounded-md border border-cyan/40 bg-cyan/10 px-4 py-2 text-sm text-text"
+          >
+            <span>{{ notice }}</span>
+            <button
+              type="button"
+              (click)="profileNotice.set(null)"
+              class="text-text-muted transition-colors hover:text-text"
+              aria-label="Fechar aviso"
+            >
+              &times;
+            </button>
+          </div>
+        }
+
+        @if (pendingEmail(); as pending) {
+          <p class="mt-4 text-sm text-text-muted">
+            Troca de e-mail pendente: confirme pelo link enviado para
+            <span class="font-medium text-text">{{ pending }}</span>.
+          </p>
+        }
+
+        @if (editing()) {
+          <div class="mt-6 border-t border-border pt-6">
+            <app-edit-profile (saved)="onProfileSaved($event)" (cancelled)="editing.set(false)" />
+          </div>
+        }
+
+        <dl class="mt-6 grid gap-4 border-t border-border pt-6 sm:grid-cols-2">
+          @if (memberSince(); as since) {
+            <div>
+              <dt class="text-xs uppercase tracking-wide text-text-muted">Membro desde</dt>
+              <dd class="mt-1 text-text">{{ since }}</dd>
+            </div>
+          }
+          @if (lastSignIn(); as last) {
+            <div>
+              <dt class="text-xs uppercase tracking-wide text-text-muted">Último acesso</dt>
+              <dd class="mt-1 text-text" [attr.title]="last.title">{{ last.label }}</dd>
+            </div>
+          }
+        </dl>
+      </div>
+    }
+  </section>
+
+  <section aria-labelledby="atividade-title">
+    <div class="mb-4 flex items-center justify-between">
+      <h2 id="atividade-title" class="text-lg font-bold">Atividade</h2>
+      @if (!decksLoading() && !decksError() && stats().total > 0) {
+        <a routerLink="/decks" class="text-sm text-cyan hover:underline">Ver meus decks &rarr;</a>
+      }
+    </div>
+
+    @if (decksLoading()) {
+      <p class="text-text-muted">Carregando...</p>
+    } @else if (decksError()) {
+      <div role="alert" class="flex flex-wrap items-center gap-3">
+        <p class="text-purple">{{ decksError() }}</p>
+        <button
+          type="button"
+          (click)="loadDecks()"
+          class="rounded-md border border-border px-3 py-1.5 text-sm text-text transition-colors hover:border-cyan"
+        >
+          Tentar novamente
+        </button>
+      </div>
+    } @else if (stats().total === 0) {
+      <div
+        class="flex flex-col items-center gap-4 rounded-lg border border-dashed border-border px-6 py-12 text-center"
+      >
+        <p class="text-text-muted">Você ainda não tem decks.</p>
+        <a
+          routerLink="/decks/novo"
+          class="rounded-md bg-gradient-brand px-4 py-2 text-sm font-medium text-on-brand transition-opacity hover:opacity-90"
+        >
+          Criar meu primeiro deck
+        </a>
+      </div>
+    } @else {
+      @let s = stats();
+      <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <li class="rounded-lg border border-border bg-surface p-4">
+          <p class="text-xs uppercase tracking-wide text-text-muted">Decks</p>
+          <p class="mt-1 text-2xl font-bold text-gradient">{{ s.total }}</p>
+        </li>
+        <li class="rounded-lg border border-border bg-surface p-4">
+          <p class="text-xs uppercase tracking-wide text-text-muted">Visibilidade</p>
+          <p class="mt-1 text-sm text-text">
+            {{ s.public }} {{ s.public === 1 ? 'público' : 'públicos' }}
+            <span class="text-text-muted" aria-hidden="true"> · </span>
+            {{ s.private }} {{ s.private === 1 ? 'privado' : 'privados' }}
+          </p>
+        </li>
+        <li class="rounded-lg border border-border bg-surface p-4">
+          <p class="text-xs uppercase tracking-wide text-text-muted">Por jogo</p>
+          <div class="mt-2 flex flex-wrap gap-2 text-xs">
+            @for (item of s.byGame; track item.game) {
+              <span
+                class="rounded-full px-2 py-0.5 font-medium"
+                [class]="item.game === 'mtg' ? 'bg-purple/15 text-purple' : 'bg-cyan/15 text-cyan'"
+              >
+                {{ gameLabels[item.game] }}: {{ item.count }}
+              </span>
+            }
+          </div>
+        </li>
+        @if (s.cards !== null) {
+          <li class="rounded-lg border border-border bg-surface p-4">
+            <p class="text-xs uppercase tracking-wide text-text-muted">Cartas</p>
+            <p class="mt-1 text-2xl font-bold text-text">{{ s.cards }}</p>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
+  <section aria-labelledby="seguranca-title">
+    <h2 id="seguranca-title" class="mb-4 text-lg font-bold">Segurança</h2>
+    <div
+      class="grid divide-y divide-border rounded-lg border border-border bg-surface md:grid-cols-2 md:divide-x md:divide-y-0"
+    >
+      <div class="p-6">
+        <h3 class="mb-4 text-sm text-text">Alterar senha</h3>
+        <app-change-password />
+      </div>
+      <div class="p-6">
+        <app-sign-out-everywhere />
       </div>
     </div>
-  }
+  </section>
 </div>
