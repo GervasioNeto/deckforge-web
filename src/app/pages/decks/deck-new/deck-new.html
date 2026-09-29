@@ -8,13 +8,28 @@
     class="space-y-4 rounded-lg border border-border bg-surface p-6"
   >
     <div>
+      @let nameInvalid = form.controls.name.invalid && form.controls.name.touched;
       <label for="name" class="mb-1 block text-sm text-text-muted">Nome</label>
       <input
         id="name"
         type="text"
         formControlName="name"
-        class="w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-cyan"
+        [attr.maxlength]="nameMaxLength"
+        [attr.aria-invalid]="nameInvalid"
+        [attr.aria-describedby]="nameInvalid ? 'name-error' : null"
+        class="w-full rounded-md border bg-bg px-3 py-2 text-text outline-none focus:border-cyan"
+        [class.border-border]="!nameInvalid"
+        [class.border-purple]="nameInvalid"
       />
+      @if (nameInvalid) {
+        <p id="name-error" class="mt-1 text-sm text-purple">
+          @if (form.controls.name.hasError('maxlength')) {
+            O nome pode ter no máximo {{ nameMaxLength }} caracteres.
+          } @else {
+            Informe um nome para o deck.
+          }
+        </p>
+      }
     </div>
 
     <div>

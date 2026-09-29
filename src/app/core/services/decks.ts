@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Service, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { CreateDeckPayload, Deck } from '../models/deck.model';
+import { CreateDeckPayload, Deck, DeckWithCards } from '../models/deck.model';
 
 @Service()
 export class Decks {
@@ -13,8 +13,8 @@ export class Decks {
     return this.http.get<Deck[]>(this.baseUrl);
   }
 
-  getDeck(deckId: string): Observable<Deck> {
-    return this.http.get<Deck>(`${this.baseUrl}/${deckId}`);
+  getDeck(deckId: string): Observable<DeckWithCards> {
+    return this.http.get<DeckWithCards>(`${this.baseUrl}/${deckId}`);
   }
 
   createDeck(payload: CreateDeckPayload): Observable<Deck> {

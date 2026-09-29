@@ -1,21 +1,27 @@
 <div class="space-y-8">
   <div>
     <a routerLink="/decks" class="text-sm text-text-muted hover:text-text">&larr; Meus Decks</a>
-    <h1 class="mt-2 text-2xl font-bold">Deck {{ deckId }}</h1>
-    <p class="mt-1 text-sm text-text-muted">
-      O detalhe completo do deck (GET /api/decks/:deckId) ainda não está disponível no backend
-      (task #37). As cartas abaixo refletem apenas o que foi adicionado nesta sessão.
-    </p>
+    <h1 class="mt-2 text-2xl font-bold">{{ deck()?.name ?? 'Deck' }}</h1>
   </div>
 
   <section>
     <h2 class="mb-3 text-lg font-semibold">Cartas no deck</h2>
-    @if (deckCards().length === 0) {
-      <p class="text-text-muted">Nenhuma carta adicionada nesta sessão ainda.</p>
+    @if (loading()) {
+      <p class="text-text-muted">Carregando...</p>
+    } @else if (loadError()) {
+      <p class="text-sm text-purple">{{ loadError() }}</p>
+    } @else if (deckCards().length === 0) {
+      <p class="text-text-muted">Nenhuma carta neste deck ainda.</p>
     } @else {
       <ul class="grid gap-3 sm:grid-cols-2">
         @for (card of deckCards(); track card.cardId) {
-          <li class="rounded-lg border border-border bg-surface p-3">{{ card.name }}</li>
+          <li class="flex items-center gap-3 rounded-lg border border-border bg-surface p-3">
+            @if (card.imageUrl) {
+              <img [src]="card.imageUrl" [alt]="card.name" class="h-16 w-auto rounded" />
+            }
+            <span class="flex-1">{{ card.name }}</span>
+            <span class="text-sm text-text-muted">x{{ card.quantity ?? 1 }}</span>
+          </li>
         }
       </ul>
     }
