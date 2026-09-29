@@ -2,6 +2,15 @@
   <h1 class="mb-1 text-2xl font-bold">Entrar</h1>
   <p class="mb-6 text-sm text-text-muted">Acesse sua conta para gerenciar seus decks.</p>
 
+  @if (notice) {
+    <div
+      role="alert"
+      class="mb-4 rounded-md border border-cyan/40 bg-cyan/10 px-4 py-2 text-sm text-text"
+    >
+      {{ notice }}
+    </div>
+  }
+
   <form
     [formGroup]="form"
     (ngSubmit)="submit()"
@@ -34,7 +43,7 @@
     <button
       type="submit"
       [disabled]="loading()"
-      class="w-full rounded-md bg-gradient-brand px-3 py-2 font-medium text-bg transition-opacity hover:opacity-90 disabled:opacity-50"
+      class="w-full rounded-md bg-gradient-brand px-3 py-2 font-medium text-on-brand transition-opacity hover:opacity-90 disabled:opacity-50"
     >
       {{ loading() ? 'Entrando...' : 'Entrar' }}
     </button>

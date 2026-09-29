@@ -1,0 +1,35 @@
+<h3 class="text-sm text-text">Sair de todos os dispositivos</h3>
+<p class="mt-1 text-sm text-text-muted">
+  Encerra sua sessão em todos os navegadores e aparelhos, incluindo este. Use se acha que alguém
+  acessou sua conta.
+</p>
+
+@if (confirming()) {
+  <div class="mt-4 flex flex-wrap items-center gap-2 text-sm">
+    <span class="text-text-muted">Tem certeza?</span>
+    <button
+      type="button"
+      (click)="confirming.set(false)"
+      [disabled]="loading()"
+      class="rounded px-3 py-1.5 text-text-muted transition-colors hover:text-text disabled:opacity-50"
+    >
+      Cancelar
+    </button>
+    <button
+      type="button"
+      (click)="signOutEverywhere()"
+      [disabled]="loading()"
+      class="rounded-md bg-purple px-3 py-1.5 font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+    >
+      {{ loading() ? 'Saindo...' : 'Sair de todos' }}
+    </button>
+  </div>
+} @else {
+  <button
+    type="button"
+    (click)="confirming.set(true)"
+    class="mt-4 rounded-md border border-border px-3 py-1.5 text-sm text-text transition-colors hover:border-purple"
+  >
+    Sair de todos os dispositivos
+  </button>
+}

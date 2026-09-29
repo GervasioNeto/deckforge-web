@@ -6,6 +6,19 @@
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <!-- Applies the saved (or OS) theme before the app boots, so the page never flashes the wrong one. -->
+    <script>
+      (function () {
+        var theme;
+        try {
+          theme = localStorage.getItem('deckforge-theme');
+        } catch (e) {}
+        if (theme !== 'light' && theme !== 'dark') {
+          theme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        }
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
   </head>
   <body>
     <app-root></app-root>

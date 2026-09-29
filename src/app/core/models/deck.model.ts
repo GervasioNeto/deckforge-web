@@ -3,6 +3,16 @@ import type { DeckCard } from './card.model';
 export type GameType = 'mtg' | 'pokemon';
 export type DeckVisibility = 'public' | 'private';
 
+export const GAME_LABELS: Record<GameType, string> = {
+  mtg: 'Magic',
+  pokemon: 'Pokémon',
+};
+
+export const VISIBILITY_LABELS: Record<DeckVisibility, string> = {
+  public: 'Público',
+  private: 'Privado',
+};
+
 export interface Deck {
   id: string;
   name: string;
