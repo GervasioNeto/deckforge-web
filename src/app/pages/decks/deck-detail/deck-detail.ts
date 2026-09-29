@@ -1,7 +1,8 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { Card, DeckCard } from '../../../core/models/card.model';
+import { Card } from '../../../core/models/card.model';
+import { DeckWithCards } from '../../../core/models/deck.model';
 import { Cards } from '../../../core/services/cards';
 import { Decks } from '../../../core/services/decks';
 
@@ -17,15 +18,20 @@ export class DeckDetail {
 
   protected readonly deckId = this.route.snapshot.paramMap.get('deckId')!;
 
-  // GET /api/decks/:deckId ainda não existe (task #37 no backlog) — lista
-  // de cartas do deck é mantida localmente até o backend entregar a rota.
-  protected readonly deckCards = signal<DeckCard[]>([]);
+  protected readonly deck = signal<DeckWithCards | null>(null);
+  protected readonly deckCards = computed(() => this.deck()?.cards ?? []);
+  protected readonly loading = signal(true);
+  protected readonly loadError = signal<string | null>(null);
 
   protected readonly searchTerm = signal('');
   protected readonly searchResults = signal<Card[]>([]);
   protected readonly searching = signal(false);
   protected readonly searchError = signal<string | null>(null);
   protected readonly feedback = signal<string | null>(null);
+
+  constructor() {
+    this.loadDeck();
+  }
 
   search(): void {
     const name = this.searchTerm().trim();
@@ -53,13 +59,27 @@ export class DeckDetail {
 
     this.decksService.addCard(this.deckId, card.id).subscribe({
       next: () => {
-        this.deckCards.update((cards) => [
-          ...cards,
-          { cardId: card.id, externalId: card.id, name: card.name, imageUrl: card.imageUrl },
-        ]);
+        // Recarrega do backend: ele incrementa `quantity` quando a carta já
+        // está no deck e é a fonte do `cardId` interno usado no DELETE.
+        this.loadDeck();
         this.feedback.set(`"${card.name}" adicionada ao deck.`);
       },
       error: () => this.feedback.set('Não foi possível adicionar a carta.'),
+    });
+  }
+
+  private loadDeck(): void {
+    this.loadError.set(null);
+
+    this.decksService.getDeck(this.deckId).subscribe({
+      next: (deck) => {
+        this.deck.set(deck);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loadError.set('Não foi possível carregar o deck.');
+        this.loading.set(false);
+      },
     });
   }
 }

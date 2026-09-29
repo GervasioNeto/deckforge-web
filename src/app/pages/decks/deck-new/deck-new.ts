@@ -17,8 +17,12 @@ export class DeckNew {
   protected readonly loading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
 
+  /** Matches the backend column (Deck.name is VARCHAR(120)). */
+  protected readonly nameMaxLength = 120;
+
   protected readonly form = this.fb.nonNullable.group({
-    name: ['', Validators.required],
+    // The pattern rejects names made only of whitespace.
+    name: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(this.nameMaxLength)]],
     game: ['mtg' as GameType, Validators.required],
     visibility: ['private' as DeckVisibility],
   });
@@ -34,7 +38,7 @@ export class DeckNew {
 
     const { name, game, visibility } = this.form.getRawValue();
 
-    this.decksService.createDeck({ name, game, visibility }).subscribe({
+    this.decksService.createDeck({ name: name.trim(), game, visibility }).subscribe({
       next: (deck) => {
         this.router.navigate(['/decks', deck.id]);
       },
