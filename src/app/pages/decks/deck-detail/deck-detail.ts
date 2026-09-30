@@ -20,6 +20,10 @@ export class DeckDetail {
 
   protected readonly deck = signal<DeckWithCards | null>(null);
   protected readonly deckCards = computed(() => this.deck()?.cards ?? []);
+  /** Sum of quantities, e.g. 4 copies of one card count as 4. */
+  protected readonly totalCards = computed(() =>
+    this.deckCards().reduce((sum, card) => sum + (card.quantity ?? 1), 0),
+  );
   protected readonly loading = signal(true);
   protected readonly loadError = signal<string | null>(null);
 

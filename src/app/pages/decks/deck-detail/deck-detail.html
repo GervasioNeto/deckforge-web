@@ -5,7 +5,12 @@
   </div>
 
   <section>
-    <h2 class="mb-3 text-lg font-semibold">Cartas no deck</h2>
+    <h2 class="mb-3 text-lg font-semibold">
+      Cartas no deck
+      @if (totalCards() > 0) {
+        <span class="text-sm font-normal text-text-muted">({{ totalCards() }})</span>
+      }
+    </h2>
     @if (loading()) {
       <p class="text-text-muted">Carregando...</p>
     } @else if (loadError()) {
@@ -13,14 +18,45 @@
     } @else if (deckCards().length === 0) {
       <p class="text-text-muted">Nenhuma carta neste deck ainda.</p>
     } @else {
-      <ul class="grid gap-3 sm:grid-cols-2">
+      <ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         @for (card of deckCards(); track card.cardId) {
-          <li class="flex items-center gap-3 rounded-lg border border-border bg-surface p-3">
-            @if (card.imageUrl) {
-              <img [src]="card.imageUrl" [alt]="card.name" class="h-16 w-auto rounded" />
-            }
-            <span class="flex-1">{{ card.name }}</span>
-            <span class="text-sm text-text-muted">x{{ card.quantity ?? 1 }}</span>
+          @let quantity = card.quantity ?? 1;
+          <li
+            class="card-frame rounded-lg p-2 shadow-card transition hover:-translate-y-0.5 hover:card-frame-glow hover:shadow-card-hover"
+            [title]="card.name"
+          >
+            <!-- Real card proportions (63 × 88 mm), so the art is never cropped. -->
+            <div class="relative aspect-[63/88] overflow-hidden rounded-md bg-bg">
+              @if (card.imageUrl) {
+                <img
+                  [src]="card.imageUrl"
+                  [alt]="card.name"
+                  loading="lazy"
+                  decoding="async"
+                  class="h-full w-full object-cover"
+                />
+              } @else {
+                <div class="flex h-full items-center justify-center p-3 text-center text-sm text-text-muted">
+                  {{ card.name }}
+                </div>
+              }
+
+              @if (quantity > 1) {
+                <span
+                  class="absolute top-2 right-2 rounded-full bg-bg/85 px-2 py-0.5 text-xs font-bold text-text shadow backdrop-blur"
+                  [attr.aria-label]="quantity + ' cópias'"
+                >
+                  ×{{ quantity }}
+                </span>
+              }
+            </div>
+            <!-- The image alt already names the card for screen readers. -->
+            <p
+              class="mt-2 truncate text-center text-xs text-card-frame-text"
+              [attr.aria-hidden]="card.imageUrl ? 'true' : null"
+            >
+              {{ card.name }}
+            </p>
           </li>
         }
       </ul>
@@ -58,7 +94,7 @@
       <ul class="mt-4 grid gap-3 sm:grid-cols-2">
         @for (card of searchResults(); track card.id) {
           <li
-            class="flex items-center justify-between rounded-lg border border-border bg-surface p-3"
+            class="flex items-center justify-between rounded-lg border border-border bg-surface shadow-card p-3"
           >
             <span>{{ card.name }}</span>
             <button type="button" (click)="addCard(card)" class="text-xs text-cyan hover:underline">

@@ -16,7 +16,7 @@
         </button>
       </div>
     } @else if (user(); as u) {
-      <div class="rounded-lg border border-border bg-surface p-6">
+      <div class="rounded-lg border border-border bg-surface shadow-card p-6">
         <div class="flex items-center gap-4">
           <div
             class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-brand text-xl font-bold text-on-brand"
@@ -138,11 +138,11 @@
     } @else {
       @let s = stats();
       <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <li class="rounded-lg border border-border bg-surface p-4">
+        <li class="rounded-lg border border-border bg-surface shadow-card p-4">
           <p class="text-xs uppercase tracking-wide text-text-muted">Decks</p>
           <p class="mt-1 text-2xl font-bold text-gradient">{{ s.total }}</p>
         </li>
-        <li class="rounded-lg border border-border bg-surface p-4">
+        <li class="rounded-lg border border-border bg-surface shadow-card p-4">
           <p class="text-xs uppercase tracking-wide text-text-muted">Visibilidade</p>
           <p class="mt-1 text-sm text-text">
             {{ s.public }} {{ s.public === 1 ? 'público' : 'públicos' }}
@@ -150,7 +150,7 @@
             {{ s.private }} {{ s.private === 1 ? 'privado' : 'privados' }}
           </p>
         </li>
-        <li class="rounded-lg border border-border bg-surface p-4">
+        <li class="rounded-lg border border-border bg-surface shadow-card p-4">
           <p class="text-xs uppercase tracking-wide text-text-muted">Por jogo</p>
           <div class="mt-2 flex flex-wrap gap-2 text-xs">
             @for (item of s.byGame; track item.game) {
@@ -164,7 +164,7 @@
           </div>
         </li>
         @if (s.cards !== null) {
-          <li class="rounded-lg border border-border bg-surface p-4">
+          <li class="rounded-lg border border-border bg-surface shadow-card p-4">
             <p class="text-xs uppercase tracking-wide text-text-muted">Cartas</p>
             <p class="mt-1 text-2xl font-bold text-text">{{ s.cards }}</p>
           </li>
@@ -176,7 +176,7 @@
   <section aria-labelledby="seguranca-title">
     <h2 id="seguranca-title" class="mb-4 text-lg font-bold">Segurança</h2>
     <div
-      class="grid divide-y divide-border rounded-lg border border-border bg-surface md:grid-cols-2 md:divide-x md:divide-y-0"
+      class="grid divide-y divide-border rounded-lg border border-border bg-surface shadow-card md:grid-cols-2 md:divide-x md:divide-y-0"
     >
       <div class="p-6">
         <h3 class="mb-4 text-sm text-text">Alterar senha</h3>
