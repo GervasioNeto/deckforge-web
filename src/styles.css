@@ -10,6 +10,7 @@
   /* Accents for text, borders and tints. */
   --color-cyan: #2dd8f0;
   --color-purple: #9b4df0;
+  --color-warning: #f0b429;
   --color-text: #f1f5f9;
   --color-text-muted: #94a3b8;
   --color-border: rgba(255, 255, 255, 0.08);
@@ -43,6 +44,7 @@
   /* Darker than the gradient stops so text and links stay readable (WCAG AA) on white. */
   --color-cyan: #0077b6;
   --color-purple: #7c3aed;
+  --color-warning: #b45309;
   --color-text: #2e354a;
   --color-text-muted: #64748b;
   --color-border: #e2e8f0;
