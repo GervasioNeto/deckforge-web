@@ -25,8 +25,8 @@ export class Decks {
     return this.http.delete<void>(`${this.baseUrl}/${deckId}`);
   }
 
-  addCard(deckId: string, externalId: string): Observable<unknown> {
-    return this.http.post(`${this.baseUrl}/${deckId}/cards`, { externalId });
+  addCard(deckId: string, externalId: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/${deckId}/cards`, { externalId });
   }
 
   removeCard(deckId: string, cardId: string): Observable<void> {

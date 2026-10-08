@@ -115,4 +115,10 @@
   <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
     <router-outlet />
   </main>
+
+  @if (toasts.current(); as toast) {
+    <div class="fixed right-4 bottom-4 left-4 z-50 flex justify-end sm:left-auto">
+      <app-toast [message]="toast.message" [variant]="toast.variant" (dismissed)="toasts.dismiss()" />
+    </div>
+  }
 </div>

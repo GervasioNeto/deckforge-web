@@ -11,9 +11,11 @@ import { filter } from 'rxjs';
 import { Auth } from '../../core/auth/auth';
 import { authGuard } from '../../core/auth/auth-guard';
 import { Theme } from '../../core/theme/theme';
+import { Toast } from '../../shared/toast/toast';
+import { Toasts } from '../../shared/toast/toasts';
 
 @Component({
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Toast],
   selector: 'app-shell',
   templateUrl: './shell.html',
   host: {
@@ -25,6 +27,7 @@ export class Shell {
   private readonly router = inject(Router);
   protected readonly auth = inject(Auth);
   protected readonly theme = inject(Theme);
+  protected readonly toasts = inject(Toasts);
 
   protected readonly menuOpen = signal(false);
   private readonly menuContainer = viewChild<ElementRef<HTMLElement>>('menuContainer');

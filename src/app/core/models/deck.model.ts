@@ -22,6 +22,8 @@ export interface Deck {
   updatedAt?: string;
   /** Total cards (sum of quantities). Only sent by GET /api/decks once the backend supports it. */
   cardCount?: number;
+  /** Image for the deck's cover. Only sent by GET /api/decks once the backend supports it. */
+  coverImageUrl?: string | null;
 }
 
 /** Shape returned by GET /api/decks/:deckId: the deck plus its cards. */

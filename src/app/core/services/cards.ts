@@ -9,7 +9,7 @@ export class Cards {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiBaseUrl}/cards`;
 
-  searchCard(name: string): Observable<Card[]> {
-    return this.http.get<Card[]>(this.baseUrl, { params: { name } });
+  searchCard(name: string): Observable<Card> {
+    return this.http.get<Card>(this.baseUrl, { params: { name } });
   }
 }
