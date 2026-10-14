@@ -1,32 +1,33 @@
-<div class="mb-6 flex items-center justify-between">
-  <h1 class="text-2xl font-bold">Meus Decks</h1>
+<div class="mb-6 flex items-center justify-between gap-4">
+  <h1 class="text-2xl font-bold">
+    Meus Decks
+    @if (!loading() && decks().length > 0) {
+      <span class="text-base font-normal text-text-muted">({{ decks().length }})</span>
+    }
+  </h1>
   <a
     routerLink="/decks/novo"
-    class="rounded-md bg-gradient-brand px-4 py-2 text-sm font-medium text-on-brand transition-opacity hover:opacity-90"
+    class="shrink-0 rounded-md bg-gradient-brand px-4 py-2 text-sm font-medium text-on-brand transition-opacity hover:opacity-90"
   >
     + Novo deck
   </a>
 </div>
 
-@if (actionError()) {
-  <div
-    role="alert"
-    class="mb-4 flex items-center justify-between gap-4 rounded-md border border-purple/40 bg-purple/10 px-4 py-2 text-sm text-text"
-  >
-    <span>{{ actionError() }}</span>
-    <button
-      type="button"
-      (click)="actionError.set(null)"
-      class="text-text-muted transition-colors hover:text-text"
-      aria-label="Fechar aviso"
-    >
-      &times;
-    </button>
-  </div>
-}
-
 @if (loading()) {
-  <p class="text-text-muted">Carregando...</p>
+  <!-- Same shape as the real cards, so nothing jumps when they arrive. -->
+  <p class="sr-only" role="status">Carregando decks...</p>
+  <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" aria-hidden="true">
+    @for (i of skeletons; track i) {
+      <li class="overflow-hidden rounded-lg border border-border bg-surface shadow-card">
+        <div class="h-28 animate-pulse bg-border"></div>
+        <div class="space-y-3 p-4">
+          <div class="h-4 w-2/3 animate-pulse rounded bg-border"></div>
+          <div class="h-3 w-1/2 animate-pulse rounded bg-border"></div>
+          <div class="h-5 w-24 animate-pulse rounded-full bg-border"></div>
+        </div>
+      </li>
+    }
+  </ul>
 } @else if (errorMessage()) {
   <div role="alert" class="flex flex-wrap items-center gap-3">
     <p class="text-purple">{{ errorMessage() }}</p>
@@ -51,97 +52,170 @@
     </a>
   </div>
 } @else {
-  <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-    @for (deck of decks(); track deck.id) {
-      <li
-        class="relative flex flex-col rounded-lg border border-border bg-surface shadow-card p-4 transition hover:-translate-y-0.5 hover:border-cyan/40 hover:shadow-card-hover has-[a:focus-visible]:border-cyan"
-      >
-        <!-- The ::after overlay stretches the link over the whole card. -->
-        <a
-          [routerLink]="['/decks', deck.id]"
-          class="truncate font-medium text-text outline-none after:absolute after:inset-0 after:rounded-lg"
-          [title]="deck.name"
+  <div class="mb-4 flex flex-wrap items-center gap-3">
+    <div class="flex rounded-md border border-border bg-surface p-0.5 text-sm" role="group" aria-label="Filtrar por jogo">
+      @for (tab of gameTabs(); track tab.value) {
+        <button
+          type="button"
+          (click)="gameFilter.set(tab.value)"
+          [attr.aria-pressed]="gameFilter() === tab.value"
+          class="rounded px-3 py-1 transition-colors"
+          [class]="gameFilter() === tab.value ? 'bg-bg font-medium text-text' : 'text-text-muted hover:text-text'"
         >
-          {{ deck.name }}
-        </a>
+          {{ tab.label }} <span class="text-xs text-text-muted">{{ tab.count }}</span>
+        </button>
+      }
+    </div>
 
-        @if (deck.cardCount !== undefined || activityLabel(deck)) {
-          <p class="mt-1 text-xs text-text-muted">
-            @if (deck.cardCount !== undefined) {
-              <span>{{ deck.cardCount }} {{ deck.cardCount === 1 ? 'carta' : 'cartas' }}</span>
-              @if (activityLabel(deck)) {
-                <span aria-hidden="true"> · </span>
-              }
-            }
-            @if (activityLabel(deck); as activity) {
-              <span [attr.title]="activityTitle(deck)">{{ activity }}</span>
-            }
-          </p>
-        }
+    <input
+      type="search"
+      [value]="query()"
+      (input)="query.set($any($event.target).value)"
+      placeholder="Buscar deck"
+      aria-label="Buscar deck pelo nome"
+      class="min-w-0 flex-1 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text outline-none transition-colors hover:border-text-muted/40 focus:border-cyan sm:max-w-xs"
+    />
 
-        @if (confirmingDeleteId() === deck.id) {
-          <div class="relative z-10 mt-4 flex items-center justify-between gap-2 text-xs">
-            <span class="text-text-muted">Excluir este deck?</span>
-            <div class="flex gap-2">
-              <button
-                type="button"
-                (click)="cancelRemoveDeck()"
-                [disabled]="deletingId() === deck.id"
-                class="rounded px-2 py-1 text-text-muted transition-colors hover:text-text disabled:opacity-50"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                (click)="removeDeck(deck.id)"
-                [disabled]="deletingId() === deck.id"
-                class="rounded bg-purple px-2 py-1 font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-              >
-                {{ deletingId() === deck.id ? 'Excluindo...' : 'Excluir' }}
-              </button>
-            </div>
-          </div>
-        } @else {
-          <div class="mt-4 flex items-center justify-between gap-2">
-            <div class="flex flex-wrap items-center gap-2 text-xs">
-              <span
-                class="rounded-full px-2 py-0.5 font-medium"
-                [class]="deck.game === 'mtg' ? 'bg-purple/15 text-purple' : 'bg-cyan/15 text-cyan'"
-              >
-                {{ gameLabels[deck.game] }}
-              </span>
-              <span class="flex items-center gap-1 text-text-muted">
-                @if (deck.visibility === 'private') {
-                  <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path
-                      fill-rule="evenodd"
-                      d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-                } @else {
-                  <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path
-                      fill-rule="evenodd"
-                      d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM4.332 8.027a6.012 6.012 0 0 1 1.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 0 1 9 7.5V8a2 2 0 0 0 4 0 2 2 0 0 1 1.523-1.943A5.977 5.977 0 0 1 16 10c0 .34-.028.675-.083 1H15a2 2 0 0 0-2 2v2.197A5.973 5.973 0 0 1 10 16v-2a2 2 0 0 0-2-2 2 2 0 0 1-2-2 2 2 0 0 0-1.668-1.973Z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-                }
-                {{ visibilityLabels[deck.visibility] }}
-              </span>
-            </div>
-            <button
-              type="button"
-              (click)="askRemoveDeck(deck.id)"
-              class="relative z-10 text-xs text-text-muted transition-colors hover:text-purple"
-              [attr.aria-label]="'Excluir deck ' + deck.name"
+    <select
+      [value]="sort()"
+      (change)="sort.set($any($event.target).value)"
+      aria-label="Ordenar decks"
+      class="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text outline-none transition-colors hover:border-text-muted/40 focus:border-cyan sm:ml-auto"
+    >
+      <option value="recent">Mais recentes</option>
+      <option value="name">Nome (A–Z)</option>
+    </select>
+  </div>
+
+  @if (visibleDecks().length === 0) {
+    <div class="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border px-6 py-10 text-center">
+      <p class="text-text-muted">Nenhum deck encontrado com esses filtros.</p>
+      @if (hasActiveFilters()) {
+        <button
+          type="button"
+          (click)="clearFilters()"
+          class="rounded-md border border-border px-3 py-1.5 text-sm text-text transition-colors hover:border-cyan"
+        >
+          Limpar filtros
+        </button>
+      }
+    </div>
+  } @else {
+    <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      @for (deck of visibleDecks(); track deck.id) {
+        <li
+          class="group relative flex flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-card transition hover:-translate-y-0.5 hover:border-cyan/40 hover:shadow-card-hover has-[a:focus-visible]:border-cyan"
+        >
+          <!-- Only decks scrolled into view fetch their cover/count. -->
+          @defer (on viewport) {
+            <app-deck-cover
+              [deck]="deck"
+              [stats]="loadedStats()[deck.id]"
+              (statsLoaded)="onStatsLoaded(deck.id, $event)"
+            />
+          } @placeholder {
+            <div class="h-28 bg-border" aria-hidden="true"></div>
+          }
+
+          <div class="flex flex-1 flex-col p-4">
+            <!-- The ::after overlay stretches the link over the whole card. -->
+            <a
+              [routerLink]="['/decks', deck.id]"
+              class="truncate font-semibold text-text outline-none after:absolute after:inset-0 after:rounded-lg"
+              [title]="deck.name"
             >
-              Excluir
-            </button>
+              {{ deck.name }}
+            </a>
+
+            @let count = cardCount(deck);
+            @let activity = activityLabel(deck);
+            @if (count !== undefined || activity) {
+              <p class="mt-1 text-xs text-text-muted">
+                @if (count !== undefined) {
+                  <span>{{ count }} {{ count === 1 ? 'carta' : 'cartas' }}</span>
+                  @if (activity) {
+                    <span aria-hidden="true"> · </span>
+                  }
+                }
+                @if (activity) {
+                  <span [attr.title]="activityTitle(deck)">{{ activity }}</span>
+                }
+              </p>
+            }
+
+            @if (confirmingDeleteId() === deck.id) {
+              <div class="relative z-10 mt-auto flex items-center justify-between gap-2 pt-4 text-xs">
+                <span class="text-text-muted">Excluir este deck?</span>
+                <div class="flex gap-2">
+                  <button
+                    type="button"
+                    (click)="cancelRemoveDeck()"
+                    [disabled]="deletingId() === deck.id"
+                    class="rounded px-2 py-1 text-text-muted transition-colors hover:text-text disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    (click)="removeDeck(deck)"
+                    [disabled]="deletingId() === deck.id"
+                    class="rounded bg-purple px-2 py-1 font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                  >
+                    {{ deletingId() === deck.id ? 'Excluindo...' : 'Excluir' }}
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <div class="mt-auto flex items-center justify-between gap-2 pt-4">
+                <div class="flex flex-wrap items-center gap-2 text-xs">
+                  <span
+                    class="rounded-full px-2 py-0.5 font-medium"
+                    [class]="deck.game === 'mtg' ? 'bg-purple/15 text-purple' : 'bg-cyan/15 text-cyan'"
+                  >
+                    {{ gameLabels[deck.game] }}
+                  </span>
+                  <span class="flex items-center gap-1 text-text-muted">
+                    @if (deck.visibility === 'private') {
+                      <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path
+                          fill-rule="evenodd"
+                          d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z"
+                          clip-rule="evenodd"
+                        />
+                      </svg>
+                    } @else {
+                      <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path
+                          fill-rule="evenodd"
+                          d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM4.332 8.027a6.012 6.012 0 0 1 1.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 0 1 9 7.5V8a2 2 0 0 0 4 0 2 2 0 0 1 1.523-1.943A5.977 5.977 0 0 1 16 10c0 .34-.028.675-.083 1H15a2 2 0 0 0-2 2v2.197A5.973 5.973 0 0 1 10 16v-2a2 2 0 0 0-2-2 2 2 0 0 1-2-2 2 2 0 0 0-1.668-1.973Z"
+                          clip-rule="evenodd"
+                        />
+                      </svg>
+                    }
+                    {{ visibilityLabels[deck.visibility] }}
+                  </span>
+                </div>
+                <!-- Hidden until hover/focus with a mouse; always visible on touch screens. -->
+                <button
+                  type="button"
+                  (click)="askRemoveDeck(deck.id)"
+                  class="relative z-10 flex h-7 w-7 items-center justify-center rounded-full text-text-muted transition hover:bg-bg hover:text-purple pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-fine:group-focus-within:opacity-100"
+                  [attr.aria-label]="'Excluir deck ' + deck.name"
+                  title="Excluir deck"
+                >
+                  <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path
+                      fill-rule="evenodd"
+                      d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z"
+                      clip-rule="evenodd"
+                    />
+                  </svg>
+                </button>
+              </div>
+            }
           </div>
-        }
-      </li>
-    }
-  </ul>
+        </li>
+      }
+    </ul>
+  }
 }

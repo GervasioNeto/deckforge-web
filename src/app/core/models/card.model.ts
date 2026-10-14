@@ -1,26 +1,27 @@
-import { GameType } from './deck.model';
-
 /**
- * Shape returned by GET /api/cards?name=. Not fully documented by the
- * backend yet, so extra fields are tolerated.
+ * Shape returned by GET /api/cards?name= (a single card, fuzzy-matched on
+ * Scryfall). `id` is the external (Scryfall) id, which is what
+ * POST /decks/:deckId/cards expects as `externalId`.
  */
 export interface Card {
   id: string;
   name: string;
-  imageUrl?: string;
-  game?: GameType;
-  [key: string]: unknown;
+  manaCost: string | null;
+  cmc?: number;
+  typeLine?: string;
+  text: string | null;
+  colors?: string[];
+  imageUrl: string | null;
 }
 
 /**
- * A card as it appears inside a deck. `cardId` is the internal DB id
- * needed for DELETE /decks/:deckId/cards/:cardId — the backend has no
- * route today that returns it from a plain card search.
+ * A card as it appears inside a deck (GET /api/decks/:deckId). `id` is the
+ * internal DB id needed for DELETE /decks/:deckId/cards/:cardId.
  */
 export interface DeckCard {
-  cardId: string;
+  id: string;
   externalId: string;
   name: string;
-  imageUrl?: string;
-  quantity?: number;
+  imageUrl?: string | null;
+  quantity: number;
 }

@@ -19,8 +19,8 @@
       <p class="text-text-muted">Nenhuma carta neste deck ainda.</p>
     } @else {
       <ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        @for (card of deckCards(); track card.cardId) {
-          @let quantity = card.quantity ?? 1;
+        @for (card of deckCards(); track card.id) {
+          @let quantity = card.quantity;
           <li
             class="card-frame rounded-lg p-2 shadow-card transition hover:-translate-y-0.5 hover:card-frame-glow hover:shadow-card-hover"
             [title]="card.name"
@@ -50,13 +50,52 @@
                 </span>
               }
             </div>
-            <!-- The image alt already names the card for screen readers. -->
-            <p
-              class="mt-2 truncate text-center text-xs text-card-frame-text"
-              [attr.aria-hidden]="card.imageUrl ? 'true' : null"
-            >
-              {{ card.name }}
-            </p>
+            @let provisional = isProvisional(card);
+            <div class="mt-2 flex items-center gap-1">
+              <button
+                type="button"
+                (click)="removeCopy(card)"
+                [disabled]="busy() || provisional"
+                [attr.aria-label]="(quantity === 1 ? 'Remover ' : 'Remover uma cópia de ') + card.name"
+                [title]="provisional ? 'Recarregue a página para editar esta carta' : quantity === 1 ? 'Remover do deck' : 'Remover uma cópia'"
+                class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-card-frame-text transition-colors hover:bg-bg/60 hover:text-purple disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-card-frame-text"
+              >
+                @if (quantity === 1) {
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path
+                      fill-rule="evenodd"
+                      d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z"
+                      clip-rule="evenodd"
+                    />
+                  </svg>
+                } @else {
+                  <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path d="M4 10a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H4.75A.75.75 0 0 1 4 10Z" />
+                  </svg>
+                }
+              </button>
+              <!-- The image alt already names the card for screen readers. -->
+              <p
+                class="min-w-0 flex-1 truncate text-center text-xs text-card-frame-text"
+                [attr.aria-hidden]="card.imageUrl ? 'true' : null"
+              >
+                {{ card.name }}
+              </p>
+              <button
+                type="button"
+                (click)="addCopy(card)"
+                [disabled]="busy()"
+                [attr.aria-label]="'Adicionar uma cópia de ' + card.name"
+                title="Adicionar uma cópia"
+                class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-card-frame-text transition-colors hover:bg-bg/60 hover:text-cyan disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-card-frame-text"
+              >
+                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path
+                    d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z"
+                  />
+                </svg>
+              </button>
+            </div>
           </li>
         }
       </ul>
@@ -67,42 +106,71 @@
     <h2 class="mb-3 text-lg font-semibold">Adicionar carta</h2>
     <form (ngSubmit)="search()" class="flex gap-2">
       <input
+        #searchInput
         type="text"
         [ngModel]="searchTerm()"
-        (ngModelChange)="searchTerm.set($event)"
+        (ngModelChange)="onSearchTermChange($event)"
         name="searchTerm"
         placeholder="Nome da carta"
-        class="flex-1 rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-cyan"
+        aria-label="Nome da carta"
+        [attr.aria-invalid]="searchError() ? 'true' : null"
+        [attr.aria-describedby]="searchError() ? 'search-error' : null"
+        class="min-w-0 flex-1 rounded-md border bg-bg px-3 py-2 text-text outline-none focus:border-cyan"
+        [class.border-border]="!searchError()"
+        [class.border-purple]="searchError()"
       />
       <button
         type="submit"
         [disabled]="searching()"
         class="rounded-md bg-gradient-brand px-4 py-2 text-sm font-medium text-on-brand transition-opacity hover:opacity-90 disabled:opacity-50"
       >
-        Buscar
+        {{ searching() ? 'Buscando...' : 'Buscar' }}
       </button>
     </form>
 
     @if (searchError()) {
-      <p class="mt-2 text-sm text-purple">{{ searchError() }}</p>
-    }
-    @if (feedback()) {
-      <p class="mt-2 text-sm text-cyan">{{ feedback() }}</p>
+      <p id="search-error" role="alert" class="mt-2 text-sm text-purple">{{ searchError() }}</p>
     }
 
-    @if (searchResults().length > 0) {
-      <ul class="mt-4 grid gap-3 sm:grid-cols-2">
-        @for (card of searchResults(); track card.id) {
-          <li
-            class="flex items-center justify-between rounded-lg border border-border bg-surface shadow-card p-3"
-          >
-            <span>{{ card.name }}</span>
-            <button type="button" (click)="addCard(card)" class="text-xs text-cyan hover:underline">
-              + adicionar
-            </button>
-          </li>
-        }
-      </ul>
+    @if (searchResult(); as card) {
+      @let addingThis = pending()?.action === 'add' && pending()?.externalId === card.id;
+      <div
+        class="mt-4 flex items-center gap-4 rounded-lg border border-border bg-surface shadow-card p-3 sm:max-w-md"
+      >
+        <div class="card-frame w-16 shrink-0 rounded-md p-1">
+          <div class="aspect-[63/88] overflow-hidden rounded-sm bg-bg">
+            @if (card.imageUrl) {
+              <img [src]="card.imageUrl" alt="" decoding="async" class="h-full w-full object-cover" />
+            }
+          </div>
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="truncate font-medium">{{ card.name }}</p>
+          @if (card.manaCost) {
+            <p class="truncate text-xs text-text-muted">{{ card.manaCost }}</p>
+          }
+          @if (card.typeLine) {
+            <p class="truncate text-xs text-text-muted">{{ card.typeLine }}</p>
+          }
+          @if (quantityInDeck() > 0) {
+            <p class="mt-1 text-xs text-cyan">Já no deck: ×{{ quantityInDeck() }}</p>
+          }
+        </div>
+        <button
+          type="button"
+          (click)="addSearchResult(card)"
+          [disabled]="busy()"
+          class="shrink-0 text-xs text-cyan hover:underline disabled:opacity-50 disabled:no-underline"
+        >
+          @if (addingThis) {
+            Adicionando...
+          } @else if (quantityInDeck() > 0) {
+            + mais uma cópia
+          } @else {
+            + adicionar
+          }
+        </button>
+      </div>
     }
   </section>
 </div>
