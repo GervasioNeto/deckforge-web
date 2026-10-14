@@ -13,6 +13,11 @@ export const VISIBILITY_LABELS: Record<DeckVisibility, string> = {
   private: 'Privado',
 };
 
+/** Narrows untrusted input (e.g. a URL query param) to a game the API accepts. */
+export function isGameType(value: unknown): value is GameType {
+  return typeof value === 'string' && Object.hasOwn(GAME_LABELS, value);
+}
+
 export interface Deck {
   id: string;
   name: string;
@@ -29,6 +34,17 @@ export interface Deck {
 /** Shape returned by GET /api/decks/:deckId: the deck plus its cards. */
 export interface DeckWithCards extends Deck {
   cards: DeckCard[];
+}
+
+/** The only author fields the public endpoints expose (never the e-mail). */
+export interface DeckAuthor {
+  id: string;
+  name: string;
+}
+
+/** Shape returned by GET /api/decks/public: someone's public deck, without its cards. */
+export interface PublicDeck extends Deck {
+  user: DeckAuthor;
 }
 
 export interface CreateDeckPayload {

@@ -1,0 +1,160 @@
+<header class="mb-8">
+  <p class="text-xs font-semibold tracking-widest text-cyan uppercase">Comunidade</p>
+  <h1 class="mt-1 text-2xl font-bold">Explorar decks</h1>
+  <p class="mt-2 max-w-xl text-text-muted">
+    Veja o que outros jogadores estão montando e encontre ideias para o seu próximo deck.
+  </p>
+</header>
+
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div
+    role="group"
+    aria-label="Filtrar por jogo"
+    class="inline-flex w-fit rounded-lg border border-border bg-surface p-1 shadow-card"
+  >
+    @for (filter of gameFilters; track filter.label) {
+      @let active = game() === filter.game;
+      <a
+        [routerLink]="[]"
+        [queryParams]="{ jogo: filter.game }"
+        queryParamsHandling="merge"
+        [attr.aria-current]="active ? 'page' : null"
+        class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-cyan"
+        [class]="active ? filter.activeClass : 'text-text-muted hover:text-text'"
+      >
+        <span class="h-2 w-2 rounded-full" [class]="filter.dot" aria-hidden="true"></span>
+        {{ filter.label }}
+      </a>
+    }
+  </div>
+
+  <div class="relative sm:w-72">
+    <label for="explore-search" class="sr-only">Buscar decks por nome ou autor</label>
+    <svg
+      class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-text-muted"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path
+        fill-rule="evenodd"
+        d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z"
+        clip-rule="evenodd"
+      />
+    </svg>
+    <input
+      id="explore-search"
+      type="search"
+      [ngModel]="searchTerm()"
+      (ngModelChange)="searchTerm.set($event)"
+      placeholder="Buscar por deck ou autor"
+      autocomplete="off"
+      class="w-full rounded-md border border-border bg-surface py-2 pr-3 pl-9 text-sm text-text shadow-card outline-none placeholder:text-text-muted focus:border-cyan"
+    />
+  </div>
+</div>
+
+<section [attr.aria-busy]="decks.isLoading()">
+  @if (decks.isLoading() && !decks.hasValue()) {
+    <p role="status" class="sr-only">Carregando decks públicos...</p>
+    <ul
+      class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      aria-hidden="true"
+    >
+      @for (i of skeletons; track i) {
+        <li
+          class="overflow-hidden rounded-lg border border-border bg-surface shadow-card *:animate-pulse *:motion-reduce:animate-none"
+        >
+          <div class="h-32 border-b border-border bg-text/5"></div>
+          <div class="space-y-4 p-4">
+            <div class="h-4 w-2/3 rounded bg-text/10"></div>
+            <div class="flex items-center gap-2">
+              <div class="h-6 w-6 rounded-full bg-text/10"></div>
+              <div class="h-3 w-1/2 rounded bg-text/10"></div>
+            </div>
+          </div>
+        </li>
+      }
+    </ul>
+  } @else if (loadError(); as message) {
+    <div role="alert" class="flex flex-wrap items-center gap-3">
+      <p class="text-purple">{{ message }}</p>
+      <button
+        type="button"
+        (click)="decks.reload()"
+        class="rounded-md border border-border px-3 py-1.5 text-sm text-text transition-colors hover:border-cyan"
+      >
+        Tentar novamente
+      </button>
+    </div>
+  } @else if (totalDecks() === 0) {
+    <div
+      class="flex flex-col items-center gap-5 rounded-lg border border-dashed border-border px-6 py-12 text-center"
+    >
+      <app-deck-stack />
+      <div>
+        <p class="font-medium text-text">{{ emptyTitle() }}</p>
+        <p class="mt-1 text-sm text-text-muted">
+          Crie um deck com visibilidade <span class="text-text">Público</span> e ele aparece aqui
+          para toda a comunidade.
+        </p>
+      </div>
+      <div class="flex flex-wrap items-center justify-center gap-3">
+        @if (game()) {
+          <a
+            [routerLink]="[]"
+            [queryParams]="{ jogo: null }"
+            queryParamsHandling="merge"
+            class="rounded-md border border-border px-4 py-2 text-sm text-text transition-colors hover:border-cyan"
+          >
+            Ver todos os jogos
+          </a>
+        }
+        @if (auth.isAuthenticated()) {
+          <a
+            routerLink="/decks/novo"
+            class="rounded-md bg-gradient-brand px-4 py-2 text-sm font-medium text-on-brand transition-opacity hover:opacity-90"
+          >
+            Criar um deck
+          </a>
+        } @else {
+          <a
+            routerLink="/cadastro"
+            class="rounded-md bg-gradient-brand px-4 py-2 text-sm font-medium text-on-brand transition-opacity hover:opacity-90"
+          >
+            Criar conta
+          </a>
+        }
+      </div>
+    </div>
+  } @else {
+    <p class="mb-4 text-sm text-text-muted" aria-live="polite">{{ resultSummary() }}</p>
+
+    @if (visibleDecks().length === 0) {
+      <div
+        class="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border px-6 py-12 text-center"
+      >
+        <p class="text-text">
+          Nenhum deck encontrado para
+          <span class="font-medium">“{{ searchTerm().trim() }}”</span>.
+        </p>
+        <p class="text-sm text-text-muted">Tente outro nome de deck ou de autor.</p>
+        <button
+          type="button"
+          (click)="searchTerm.set('')"
+          class="mt-1 rounded-md border border-border px-3 py-1.5 text-sm text-text transition-colors hover:border-cyan"
+        >
+          Limpar busca
+        </button>
+      </div>
+    } @else {
+      <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        @for (deck of visibleDecks(); track deck.id) {
+          <li>
+            <app-public-deck-card [deck]="deck" [owned]="deck.user.id === currentUserId()" />
+          </li>
+        }
+      </ul>
+    }
+  }
+</section>

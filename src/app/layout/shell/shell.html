@@ -6,7 +6,10 @@
         class="flex items-center gap-2"
       >
         <img src="logo-icon.png" alt="" width="36" height="36" class="h-9 w-9" />
-        <span class="text-xl font-bold text-gradient tracking-tight">DeckForge</span>
+        <!-- Visually hidden on phones to fit the nav, but still the link's accessible name. -->
+        <span class="sr-only text-xl font-bold text-gradient tracking-tight sm:not-sr-only">
+          DeckForge
+        </span>
       </a>
 
       <nav class="flex items-center gap-4 text-sm sm:gap-6">
@@ -34,11 +37,22 @@
           }
         </button>
 
+        <!-- Public, so it sits in the same spot whether signed in or not. -->
+        <a
+          routerLink="/explorar"
+          routerLinkActive
+          ariaCurrentWhenActive="page"
+          class="text-text-muted transition-colors hover:text-text aria-[current=page]:text-cyan"
+        >
+          Explorar
+        </a>
+
         @if (auth.isAuthenticated()) {
           <a
             routerLink="/decks"
-            routerLinkActive="text-cyan"
-            class="text-text-muted transition-colors hover:text-text"
+            routerLinkActive
+            ariaCurrentWhenActive="page"
+            class="text-text-muted transition-colors hover:text-text aria-[current=page]:text-cyan"
           >
             Meus Decks
           </a>
@@ -77,9 +91,10 @@
                 </div>
                 <a
                   routerLink="/perfil"
-                  routerLinkActive="text-cyan"
+                  routerLinkActive
+                  ariaCurrentWhenActive="page"
                   (click)="menuOpen.set(false)"
-                  class="mt-1 block rounded-md px-3 py-2 text-text-muted transition-colors hover:bg-bg hover:text-text"
+                  class="mt-1 block rounded-md px-3 py-2 text-text-muted transition-colors hover:bg-bg hover:text-text aria-[current=page]:text-cyan"
                 >
                   Perfil
                 </a>
@@ -96,8 +111,9 @@
         } @else {
           <a
             routerLink="/login"
-            routerLinkActive="text-cyan"
-            class="text-text-muted transition-colors hover:text-text"
+            routerLinkActive
+            ariaCurrentWhenActive="page"
+            class="text-text-muted transition-colors hover:text-text aria-[current=page]:text-cyan"
           >
             Entrar
           </a>

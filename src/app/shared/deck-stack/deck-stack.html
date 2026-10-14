@@ -1,0 +1,44 @@
+@let sleeve =
+  accent()
+    ? 'card-frame shadow-md shadow-black/30 light:shadow-black/10'
+    : 'border-2 border-dashed border-border bg-surface';
+
+<!-- All three share one grid cell and pivot from the bottom edge, like a hand of cards. -->
+<span
+  class="relative col-start-1 row-start-1 aspect-[63/88] w-16 origin-bottom -translate-x-5 -rotate-12 rounded-md transition-transform duration-300 ease-out group-hover:-translate-x-9 group-hover:-rotate-20 motion-reduce:transition-none"
+  [class]="sleeve"
+>
+  @if (accent()) {
+    <span class="absolute inset-1 rounded-sm border border-card-frame-border"></span>
+  }
+</span>
+
+<span
+  class="relative col-start-1 row-start-1 aspect-[63/88] w-16 origin-bottom translate-x-5 rotate-12 rounded-md transition-transform duration-300 ease-out group-hover:translate-x-9 group-hover:rotate-20 motion-reduce:transition-none"
+  [class]="sleeve"
+>
+  @if (accent()) {
+    <span class="absolute inset-1 rounded-sm border border-card-frame-border"></span>
+  }
+</span>
+
+<span
+  class="relative col-start-1 row-start-1 flex aspect-[63/88] w-16 items-center justify-center rounded-md transition-transform duration-300 ease-out group-hover:-translate-y-2 motion-reduce:transition-none"
+  [class]="sleeve"
+>
+  @if (accent(); as accent) {
+    <span class="absolute inset-1 rounded-sm border border-card-frame-border"></span>
+    <svg
+      class="h-6 w-6 drop-shadow-[0_0_6px_currentColor]"
+      [class]="accent.text"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+    >
+      <path d="M10 1c.6 5 4 8.4 9 9-5 .6-8.4 4-9 9-.6-5-4-8.4-9-9 5-.6 8.4-4 9-9Z" />
+    </svg>
+  } @else {
+    <svg class="h-6 w-6 text-text-muted/40" viewBox="0 0 20 20" fill="currentColor">
+      <path d="M10 1c.6 5 4 8.4 9 9-5 .6-8.4 4-9 9-.6-5-4-8.4-9-9 5-.6 8.4-4 9-9Z" />
+    </svg>
+  }
+</span>
