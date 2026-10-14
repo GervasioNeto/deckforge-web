@@ -1,0 +1,66 @@
+@let d = deck();
+
+<article
+  class="group relative flex h-full flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-card transition"
+  [class]="
+    owned()
+      ? 'hover:-translate-y-0.5 hover:border-cyan/40 hover:shadow-card-hover has-[a:focus-visible]:border-cyan'
+      : ''
+  "
+>
+  <!-- Cover: the game's accent glows up from the bottom edge, behind the card stack. -->
+  <div
+    class="relative flex h-32 items-end justify-center overflow-hidden border-b border-border bg-radial-[at_50%_100%] to-transparent to-70%"
+    [class]="accent().glowFrom"
+  >
+    <app-deck-stack [game]="d.game" class="translate-y-3" />
+
+    <span
+      class="absolute top-3 left-3 rounded-full px-2 py-0.5 text-xs font-medium"
+      [class]="accent().badge"
+    >
+      {{ gameLabel() }}
+    </span>
+    @if (owned()) {
+      <span
+        class="absolute top-3 right-3 rounded-full border border-border bg-bg/80 px-2 py-0.5 text-xs font-medium text-text backdrop-blur"
+      >
+        Seu deck
+      </span>
+    }
+  </div>
+
+  <div class="flex flex-1 flex-col gap-3 p-4">
+    <h2 class="truncate font-medium text-text" [title]="d.name">
+      @if (owned()) {
+        <!-- The ::after overlay stretches the link over the whole card. -->
+        <a
+          [routerLink]="['/decks', d.id]"
+          class="outline-none after:absolute after:inset-0 after:rounded-lg"
+        >
+          {{ d.name }}
+        </a>
+      } @else {
+        {{ d.name }}
+      }
+    </h2>
+
+    <p class="mt-auto flex min-w-0 items-center gap-2 text-xs text-text-muted">
+      <span
+        class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-brand text-[11px] font-bold text-on-brand"
+        aria-hidden="true"
+      >
+        {{ authorInitial() }}
+      </span>
+      <span class="truncate" [title]="d.user.name">
+        <span class="sr-only">Por </span>{{ owned() ? 'Você' : d.user.name }}
+      </span>
+      @if (createdAt(); as created) {
+        <span aria-hidden="true">·</span>
+        <time class="shrink-0" [attr.datetime]="created.iso" [title]="created.title">
+          {{ created.label }}
+        </time>
+      }
+    </p>
+  </div>
+</article>

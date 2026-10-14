@@ -19,6 +19,12 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
   {
+    // No guard: GET /decks/public works signed out, so visitors can browse too.
+    path: 'explorar',
+    loadComponent: () =>
+      import('./pages/decks/decks-explore/decks-explore').then((m) => m.DecksExplore),
+  },
+  {
     path: 'decks',
     loadComponent: () =>
       import('./pages/decks/decks-list/decks-list').then((m) => m.DecksList),
