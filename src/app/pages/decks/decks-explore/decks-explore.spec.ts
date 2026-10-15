@@ -106,12 +106,14 @@ describe('DecksExplore', () => {
     expect(page().textContent).toContain('2 decks públicos');
   });
 
-  it('marks the signed-in user’s deck and links only that one', async () => {
+  it('links every public deck and marks the signed-in user’s own', async () => {
     await respond(await open('/explorar'), DECKS);
 
-    const links = page().querySelectorAll<HTMLAnchorElement>('app-public-deck-card a');
-    expect(links).toHaveLength(1);
-    expect(links[0].getAttribute('href')).toBe('/decks/deck-2');
+    const links = [...page().querySelectorAll<HTMLAnchorElement>('app-public-deck-card a')];
+    expect(links.map((link) => link.getAttribute('href')).sort()).toEqual([
+      '/decks/deck-1',
+      '/decks/deck-2',
+    ]);
     expect(page().textContent).toContain('Seu deck');
   });
 

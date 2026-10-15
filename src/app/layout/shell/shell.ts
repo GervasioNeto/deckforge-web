@@ -36,6 +36,8 @@ export class Shell {
   private readonly currentUrl = signal(this.router.url);
   /** Highlights the avatar, since the profile link is hidden inside the menu. */
   protected readonly onProfilePage = computed(() => this.currentUrl().startsWith('/perfil'));
+  /** Routes with `data: { wide: true }` (e.g. a deck's cards) get a wider column. */
+  protected readonly wide = signal(false);
 
   constructor() {
     this.router.events
@@ -45,6 +47,7 @@ export class Shell {
       )
       .subscribe((event) => {
         this.currentUrl.set(event.urlAfterRedirects);
+        this.wide.set(this.deepestRoute().data['wide'] === true);
         this.menuOpen.set(false);
       });
 
@@ -95,10 +98,16 @@ export class Shell {
   }
 
   private currentRouteRequiresAuth(): boolean {
+    return this.deepestRoute().pathFromRoot.some((r) =>
+      r.routeConfig?.canActivate?.includes(authGuard),
+    );
+  }
+
+  private deepestRoute() {
     let route = this.router.routerState.snapshot.root;
     while (route.firstChild) {
       route = route.firstChild;
     }
-    return route.pathFromRoot.some((r) => r.routeConfig?.canActivate?.includes(authGuard));
+    return route;
   }
 }

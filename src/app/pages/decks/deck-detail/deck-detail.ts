@@ -1,233 +1,210 @@
-import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { Subscription, finalize, retry } from 'rxjs';
-import { Card, DeckCard } from '../../../core/models/card.model';
-import { DeckWithCards } from '../../../core/models/deck.model';
-import { Cards } from '../../../core/services/cards';
-import { Decks } from '../../../core/services/decks';
-import { apiErrorMessage } from '../../../core/utils/api-error';
+import { Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { LucideFileUp, LucideSearchX } from '@lucide/angular';
+import { distinctUntilChanged, map, skip } from 'rxjs';
+import { Auth } from '../../../core/auth/auth';
+import { countsTowardDeck } from '../../../core/games/game-rules';
+import { formatLabel } from '../../../core/games/games';
+import { deckColors } from '../../../core/games/mtg/mtg-rules';
+import { DeckCard } from '../../../core/models/card.model';
+import { normalizeForSearch } from '../../../core/utils/search';
 import { Toasts } from '../../../shared/toast/toasts';
+import { CardDialog } from './components/card-dialog/card-dialog';
+import { CardPreview } from './components/card-preview/card-preview';
+import { CardSearch } from './components/card-search/card-search';
+import { DeckGridView } from './components/deck-grid-view/deck-grid-view';
+import { DeckAction, DeckHeader } from './components/deck-header/deck-header';
+import { DeckIssues } from './components/deck-issues/deck-issues';
+import { DeckListView } from './components/deck-list-view/deck-list-view';
+import { DeckSettingsDialog } from './components/deck-settings-dialog/deck-settings-dialog';
+import { DeckStacksView } from './components/deck-stacks-view/deck-stacks-view';
+import { DeckStats } from './components/deck-stats/deck-stats';
+import { DeckToolbar } from './components/deck-toolbar/deck-toolbar';
+import { DeleteDeckDialog } from './components/delete-deck-dialog/delete-deck-dialog';
+import { ExportDialog } from './components/export-dialog/export-dialog';
+import { ImportDialog } from './components/import-dialog/import-dialog';
+import { SampleHandDialog } from './components/sample-hand-dialog/sample-hand-dialog';
+import { analyzeDeck } from './state/deck-analysis';
+import { buildSections } from './state/deck-sections';
+import { DeckStore } from './state/deck-store';
+import { DeckViewPrefs } from './state/deck-view-prefs';
 
-/** What the page needs to add a copy, whether it comes from the search or the grid. */
-type CardRef = Pick<DeckCard, 'externalId' | 'name' | 'imageUrl'>;
+type DeckDialog = 'settings' | 'import' | 'export' | 'hand' | 'delete';
 
 @Component({
   selector: 'app-deck-detail',
-  imports: [RouterLink, FormsModule],
+  imports: [
+    RouterLink,
+    DeckHeader,
+    DeckIssues,
+    DeckToolbar,
+    CardSearch,
+    DeckListView,
+    DeckStacksView,
+    DeckGridView,
+    DeckStats,
+    CardPreview,
+    CardDialog,
+    DeckSettingsDialog,
+    ImportDialog,
+    ExportDialog,
+    SampleHandDialog,
+    DeleteDeckDialog,
+    LucideFileUp,
+    LucideSearchX,
+  ],
+  providers: [DeckStore],
   templateUrl: './deck-detail.html',
 })
 export class DeckDetail {
+  protected readonly store = inject(DeckStore);
+  protected readonly prefs = inject(DeckViewPrefs);
   private readonly route = inject(ActivatedRoute);
-  private readonly decksService = inject(Decks);
-  private readonly cardsService = inject(Cards);
+  private readonly router = inject(Router);
+  private readonly auth = inject(Auth);
   private readonly toasts = inject(Toasts);
 
-  protected readonly deckId = this.route.snapshot.paramMap.get('deckId')!;
+  protected readonly deck = this.store.deck;
+  protected readonly rules = this.store.rules;
 
-  protected readonly deck = signal<DeckWithCards | null>(null);
-  protected readonly deckCards = computed(() => this.deck()?.cards ?? []);
-  /** Sum of quantities, e.g. 4 copies of one card count as 4. */
-  protected readonly totalCards = computed(() =>
-    this.deckCards().reduce((sum, card) => sum + card.quantity, 0),
-  );
-  protected readonly loading = signal(true);
-  protected readonly loadError = signal<string | null>(null);
-
-  private readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
-  protected readonly searchTerm = signal('');
-  protected readonly searchResult = signal<Card | null>(null);
-  protected readonly searching = signal(false);
-  protected readonly searchError = signal<string | null>(null);
-  private searchSubscription?: Subscription;
-
-  /**
-   * The card being added/removed right now. Only one change runs at a time:
-   * each request moves the quantity by one, so overlapping requests (or a
-   * double click) would leave the optimistic state out of sync.
-   */
-  protected readonly pending = signal<{ externalId: string; action: 'add' | 'remove' } | null>(null);
-  protected readonly busy = computed(() => this.pending() !== null);
-
-  /** Copies of the searched card already in the deck (0 when it isn't there). */
-  protected readonly quantityInDeck = computed(() => {
-    const result = this.searchResult();
-    if (!result) {
-      return 0;
-    }
-    return this.deckCards().find((card) => card.externalId === result.id)?.quantity ?? 0;
+  /** The saved grouping, unless this game doesn't have it (e.g. "cor" for Pokémon). */
+  protected readonly grouping = computed(() => {
+    const saved = this.prefs.grouping();
+    return this.rules().groupings.some((option) => option.id === saved) ? saved : 'type';
+  });
+  protected readonly boards = computed(() => this.rules().boards(this.deck()?.format ?? null));
+  protected readonly formatName = computed(() => {
+    const deck = this.deck();
+    return deck ? formatLabel(deck.game, deck.format) : '';
   });
 
+  protected readonly filter = signal('');
+  private readonly visibleCards = computed(() => {
+    const term = normalizeForSearch(this.filter().trim());
+    const cards = this.store.cards();
+    if (!term) return cards;
+    return cards.filter((card) =>
+      normalizeForSearch(`${card.name} ${card.typeLine}`).includes(term),
+    );
+  });
+
+  protected readonly sections = computed(() =>
+    buildSections(this.visibleCards(), this.rules(), {
+      boards: this.boards(),
+      grouping: this.grouping(),
+      sort: this.prefs.sort(),
+    }),
+  );
+  protected readonly isEmpty = computed(() => this.store.cards().length === 0);
+  protected readonly noMatches = computed(
+    () => !this.isEmpty() && this.sections().every((section) => section.count === 0),
+  );
+
+  protected readonly analysis = computed(() => analyzeDeck(this.store.cards(), this.rules()));
+  protected readonly validation = computed(() =>
+    this.rules().validate(this.store.cards(), this.deck()?.format ?? null),
+  );
+  protected readonly colors = computed(() =>
+    this.rules().hasMana ? deckColors(this.store.cards()) : [],
+  );
+
+  /** The card under the pointer in the list view; else the cover, else the first card. */
+  private readonly hovered = signal<DeckCard | null>(null);
+  protected readonly previewCard = computed(() => {
+    const cards = this.store.cards();
+    const hovered = this.hovered();
+    if (hovered && cards.some((card) => card.id === hovered.id)) return hovered;
+    const coverId = this.deck()?.coverCardId;
+    return (
+      cards.find((card) => card.id === coverId) ??
+      cards.find((card) => countsTowardDeck(card.board) && card.imageUrl) ??
+      null
+    );
+  });
+
+  protected readonly dialog = signal<DeckDialog | null>(null);
+  /** Snapshot of the card whose details are open (it may leave the deck while open). */
+  protected readonly inspected = signal<DeckCard | null>(null);
+  protected readonly deleting = signal(false);
+
   constructor() {
-    this.loadDeck();
-  }
-
-  protected onSearchTermChange(value: string): void {
-    this.searchTerm.set(value);
-    // The result/error belong to the previous term.
-    this.searchSubscription?.unsubscribe();
-    this.searching.set(false);
-    this.searchResult.set(null);
-    this.searchError.set(null);
-  }
-
-  search(): void {
-    const name = this.searchTerm().trim();
-    if (!name) {
-      return;
-    }
-
-    this.searchSubscription?.unsubscribe();
-    this.searching.set(true);
-    this.searchResult.set(null);
-    this.searchError.set(null);
-
-    this.searchSubscription = this.cardsService.searchCard(name).subscribe({
-      next: (card) => {
-        this.searchResult.set(card);
-        this.searching.set(false);
-      },
-      error: (error) => {
-        this.searchError.set(apiErrorMessage(error, 'Não foi possível buscar cartas.'));
-        this.searching.set(false);
-      },
-    });
-  }
-
-  protected addSearchResult(card: Card): void {
-    this.addCopy({ externalId: card.id, name: card.name, imageUrl: card.imageUrl }, true);
-
-    // Ready for the next name: the user can type right away.
-    const input = this.searchInput()?.nativeElement;
-    input?.focus();
-    input?.select();
-  }
-
-  /** `notify` shows a success toast; the grid buttons skip it since the change is in view. */
-  protected addCopy(card: CardRef, notify = false): void {
-    if (this.busy()) {
-      return;
-    }
-    this.pending.set({ externalId: card.externalId, action: 'add' });
-
-    const snapshot = this.deck();
-    const isNew = !this.deckCards().some((deckCard) => deckCard.externalId === card.externalId);
-    this.changeQuantityLocally(card, 1);
-
-    this.decksService.addCard(this.deckId, card.externalId).subscribe({
-      next: () => {
-        if (notify) {
-          this.toasts.success(`"${card.name}" adicionada ao deck.`);
-        }
-
-        if (!isNew) {
-          this.pending.set(null);
-          return;
-        }
-
-        // Só o backend sabe o `id` interno da carta nova (usado no DELETE), então
-        // recarrega em segundo plano. Mantém `pending` até lá para um segundo
-        // clique não ser sobrescrito por essa resposta.
-        this.decksService
-          .getDeck(this.deckId)
-          .pipe(
-            retry({ count: 2, delay: 1000 }),
-            finalize(() => this.pending.set(null)),
-          )
-          .subscribe({
-            next: (deck) => this.deck.set(deck),
-            error: () =>
-              this.toasts.warning(
-                `"${card.name}" foi adicionada, mas não foi possível atualizar o deck. Recarregue a página para editá-la.`,
-              ),
-          });
-      },
-      error: (error) => {
-        this.deck.set(snapshot);
-        this.toasts.error(apiErrorMessage(error, 'Não foi possível adicionar a carta.'));
-        this.pending.set(null);
-      },
-    });
-  }
-
-  /** The backend removes one copy per request, deleting the entry at the last one. */
-  protected removeCopy(card: DeckCard): void {
-    if (this.busy() || this.isProvisional(card)) {
-      return;
-    }
-    this.pending.set({ externalId: card.externalId, action: 'remove' });
-
-    const snapshot = this.deck();
-    const isLastCopy = card.quantity === 1;
-    this.changeQuantityLocally(card, -1);
-
-    this.decksService
-      .removeCard(this.deckId, card.id)
-      .pipe(finalize(() => this.pending.set(null)))
-      .subscribe({
-        next: () => {
-          if (isLastCopy) {
-            this.toasts.success(`"${card.name}" removida do deck.`);
-          }
-        },
-        error: (error) => {
-          this.deck.set(snapshot);
-          this.toasts.error(
-            apiErrorMessage(error, 'Não foi possível remover a carta.', {
-              CARD_NOT_FOUND: 'Carta não encontrada.',
-              CARD_NOT_IN_DECK: 'Essa carta não está mais no deck. Recarregue a página.',
-            }),
-          );
-        },
+    this.route.paramMap
+      .pipe(
+        map((params) => params.get('deckId')!),
+        distinctUntilChanged(),
+        takeUntilDestroyed(),
+      )
+      .subscribe((deckId) => {
+        // Duplicating navigates to the copy and reuses this component.
+        this.dialog.set(null);
+        this.inspected.set(null);
+        this.hovered.set(null);
+        this.filter.set('');
+        this.store.load(deckId);
       });
+
+    // Signing in or out changes what this deck shows (owner tools, private access).
+    toObservable(computed(() => this.auth.currentUser()?.id ?? null))
+      .pipe(skip(1), distinctUntilChanged(), takeUntilDestroyed())
+      .subscribe(() => this.store.refresh());
   }
 
-  /**
-   * A card added in this session still carries its external id as `id` until
-   * the reload brings the internal one, so it can't be removed yet.
-   */
-  protected isProvisional(card: DeckCard): boolean {
-    return card.id === card.externalId;
+  protected onPreview(card: DeckCard): void {
+    this.hovered.set(card);
   }
 
-  /** Optimistic update mirroring the backend: new entry, ±1 copy, or drop at zero. */
-  private changeQuantityLocally(card: CardRef, delta: 1 | -1): void {
-    this.deck.update((deck) => {
-      if (!deck) {
-        return deck;
+  protected onAction(action: DeckAction): void {
+    switch (action) {
+      case 'edit':
+        this.dialog.set('settings');
+        break;
+      case 'import':
+      case 'export':
+      case 'hand':
+      case 'delete':
+        this.dialog.set(action);
+        break;
+      case 'duplicate':
+        void this.duplicate();
+        break;
+      case 'share':
+        void this.copyLink();
+        break;
+    }
+  }
+
+  protected async deleteDeck(): Promise<void> {
+    const name = this.deck()?.name;
+    this.deleting.set(true);
+    const deleted = await this.store.deleteDeck();
+    this.deleting.set(false);
+    if (deleted) {
+      this.dialog.set(null);
+      this.toasts.success(`Deck "${name}" excluído.`);
+      void this.router.navigate(['/decks']);
+    }
+  }
+
+  private async duplicate(): Promise<void> {
+    const copy = await this.store.duplicate();
+    if (copy) {
+      this.toasts.success(`Cópia criada: "${copy.name}".`);
+      void this.router.navigate(['/decks', copy.id]);
+    }
+  }
+
+  private async copyLink(): Promise<void> {
+    const url = window.location.href;
+    try {
+      await navigator.clipboard.writeText(url);
+      if (this.deck()?.visibility === 'private') {
+        this.toasts.warning('Link copiado. O deck é privado: só você consegue abri-lo.');
+      } else {
+        this.toasts.success('Link do deck copiado.');
       }
-
-      const existing = deck.cards.some((deckCard) => deckCard.externalId === card.externalId);
-      const cards: DeckCard[] = existing
-        ? deck.cards
-            .map((deckCard) =>
-              deckCard.externalId === card.externalId
-                ? { ...deckCard, quantity: deckCard.quantity + delta }
-                : deckCard,
-            )
-            .filter((deckCard) => deckCard.quantity > 0)
-        : [
-            ...deck.cards,
-            // `id` provisório até o reload trazer o id interno.
-            { id: card.externalId, externalId: card.externalId, name: card.name, imageUrl: card.imageUrl, quantity: 1 },
-          ];
-
-      return { ...deck, cards };
-    });
-  }
-
-  private loadDeck(): void {
-    this.loadError.set(null);
-
-    this.decksService.getDeck(this.deckId).subscribe({
-      next: (deck) => {
-        this.deck.set(deck);
-        this.loading.set(false);
-      },
-      error: (error) => {
-        this.loadError.set(apiErrorMessage(error, 'Não foi possível carregar o deck.'));
-        this.loading.set(false);
-      },
-    });
+    } catch {
+      this.toasts.error('Não foi possível copiar o link.');
+    }
   }
 }

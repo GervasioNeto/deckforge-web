@@ -1,0 +1,116 @@
+@let activeIndex = active();
+@let showList = open() && suggestions().length > 0;
+
+<div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+  <div class="relative min-w-0 flex-1">
+    <label for="card-search-input" class="sr-only">Adicionar carta ao deck</label>
+    <svg
+      lucideSearch
+      [size]="16"
+      class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-text-muted"
+    />
+    <input
+      #input
+      id="card-search-input"
+      type="text"
+      role="combobox"
+      autocomplete="off"
+      spellcheck="false"
+      [value]="query()"
+      (input)="onInput($any($event.target).value)"
+      (keydown)="onKeydown($event)"
+      (focus)="open.set(true)"
+      [attr.aria-busy]="adding() ? 'true' : null"
+      aria-autocomplete="list"
+      [attr.aria-expanded]="showList"
+      [attr.aria-controls]="listboxId"
+      [attr.aria-activedescendant]="
+        showList && activeIndex >= 0 ? listboxId + '-' + activeIndex : null
+      "
+      aria-describedby="card-search-hint"
+      placeholder="Adicionar carta — ex.: 4 Lightning Bolt"
+      class="h-10 w-full rounded-md border border-border bg-surface pr-10 pl-9 text-sm text-text outline-none transition-colors placeholder:text-text-muted/70 hover:border-text-muted/40 focus:border-cyan"
+    />
+    @if (adding() || loadingSuggestions()) {
+      <svg
+        lucideLoaderCircle
+        [size]="16"
+        class="absolute top-1/2 right-3 -translate-y-1/2 animate-spin text-text-muted"
+        aria-hidden="true"
+      />
+    }
+    <p id="card-search-hint" class="sr-only">
+      Digite o nome e pressione Enter. Um número antes do nome define quantas cópias.
+    </p>
+
+    @if (showList) {
+      <ul
+        [id]="listboxId"
+        role="listbox"
+        aria-label="Sugestões de cartas"
+        class="absolute inset-x-0 top-full z-30 mt-1 overflow-hidden rounded-lg border border-border bg-surface p-1 shadow-xl shadow-black/40 light:shadow-black/10"
+      >
+        @for (option of highlighted(); track $index) {
+          <li
+            [id]="listboxId + '-' + $index"
+            role="option"
+            [attr.aria-selected]="$index === activeIndex"
+            (mousedown)="$event.preventDefault()"
+            (click)="add(suggestions()[$index])"
+            (mousemove)="active.set($index)"
+            class="flex cursor-pointer items-center justify-between gap-3 rounded-md px-3 py-2 text-sm text-text-muted"
+            [class.bg-bg]="$index === activeIndex"
+            [class.text-text]="$index === activeIndex"
+          >
+            <span class="truncate">
+              {{ option.before }}<strong class="font-semibold text-text">{{ option.match }}</strong
+              >{{ option.after }}
+            </span>
+            @if ($index === activeIndex) {
+              <span class="shrink-0 text-[11px] text-text-muted" aria-hidden="true">
+                @if (parsed().quantity > 1) {
+                  {{ parsed().quantity }}× ·
+                }
+                Enter
+              </span>
+            }
+          </li>
+        }
+      </ul>
+    }
+  </div>
+
+  <div class="flex items-center gap-2">
+    <!-- Where new cards go. -->
+    <div
+      class="flex h-10 shrink-0 items-center rounded-md border border-border bg-surface p-0.5 text-sm"
+      role="group"
+      aria-label="Adicionar em"
+    >
+      @for (target of targets(); track target) {
+        <button
+          type="button"
+          [attr.aria-pressed]="board() === target"
+          (click)="board.set(target)"
+          class="h-full rounded px-2.5 transition-colors"
+          [class]="
+            board() === target ? 'bg-bg font-medium text-text' : 'text-text-muted hover:text-text'
+          "
+        >
+          {{ boardLabels[target] }}
+        </button>
+      }
+    </div>
+
+    <button
+      type="button"
+      (click)="importRequested.emit()"
+      class="flex h-10 shrink-0 items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-sm text-text transition-colors hover:border-cyan/50"
+      title="Colar uma lista de cartas"
+    >
+      <svg lucideFileUp [size]="16" class="text-text-muted" />
+      <span class="hidden sm:inline">Importar</span>
+      <span class="sr-only sm:hidden">Importar lista</span>
+    </button>
+  </div>
+</div>

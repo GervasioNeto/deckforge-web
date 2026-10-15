@@ -45,6 +45,20 @@
     </div>
 
     <div>
+      <label for="format" class="mb-1 block text-sm text-text-muted">Formato</label>
+      <select
+        id="format"
+        formControlName="format"
+        class="w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-cyan"
+      >
+        <option value="">Casual (sem formato)</option>
+        @for (format of formats(); track format.id) {
+          <option [value]="format.id">{{ format.label }}</option>
+        }
+      </select>
+    </div>
+
+    <div>
       <label for="visibility" class="mb-1 block text-sm text-text-muted">Visibilidade</label>
       <select
         id="visibility"

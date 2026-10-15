@@ -1,0 +1,259 @@
+@let d = deck();
+@let canEdit = d.isOwner;
+@let state = status();
+
+<a
+  [routerLink]="canEdit ? '/decks' : '/explorar'"
+  class="inline-flex items-center gap-1 text-sm text-text-muted transition-colors hover:text-text"
+>
+  <svg lucideArrowLeft [size]="15" />
+  {{ canEdit ? 'Meus Decks' : 'Explorar' }}
+</a>
+
+<header
+  class="relative mt-3 overflow-hidden rounded-xl border border-border bg-surface shadow-card"
+>
+  <!-- Cover art, fading into the surface so the text on the left stays readable. -->
+  @if (coverArt(); as art) {
+    <img
+      [src]="art"
+      alt=""
+      aria-hidden="true"
+      decoding="async"
+      (error)="onCoverError()"
+      class="absolute inset-y-0 right-0 h-full w-full object-cover object-[center_28%] opacity-40 sm:w-4/5 light:opacity-30"
+    />
+    <div
+      class="absolute inset-0 bg-linear-to-r from-surface from-25% via-surface/85 to-surface/25"
+      aria-hidden="true"
+    ></div>
+    <div
+      class="absolute inset-0 bg-linear-to-t from-surface via-surface/20 to-transparent"
+      aria-hidden="true"
+    ></div>
+  } @else {
+    <div
+      class="absolute inset-0 bg-radial-[at_100%_0%] to-transparent to-60%"
+      [class]="accent().glowFrom"
+      aria-hidden="true"
+    ></div>
+  }
+  <div class="absolute inset-x-0 top-0 h-0.5" [class]="accent().fill" aria-hidden="true"></div>
+
+  <div class="relative flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-end lg:justify-between">
+    <div class="min-w-0">
+      <div class="flex flex-wrap items-center gap-2 text-xs">
+        <span class="rounded-full px-2 py-0.5 font-medium" [class]="accent().badge">
+          {{ gameLabel() }}
+        </span>
+        <span
+          class="rounded-full border border-border bg-bg/60 px-2 py-0.5 font-medium text-text backdrop-blur"
+        >
+          {{ formatName() }}
+        </span>
+        <span class="flex items-center gap-1 text-text-muted">
+          @if (d.visibility === 'private') {
+            <svg lucideLock [size]="13" />
+          } @else {
+            <svg lucideGlobe [size]="13" />
+          }
+          {{ visibilityLabel() }}
+        </span>
+      </div>
+
+      <h1 class="mt-3 text-2xl font-bold tracking-tight break-words text-text sm:text-3xl">
+        {{ d.name }}
+      </h1>
+
+      <p class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-text-muted">
+        @if (colorPips().length > 0) {
+          <span
+            class="flex items-center gap-1"
+            role="img"
+            [attr.aria-label]="'Cores: ' + colors().join(', ')"
+          >
+            @for (pip of colorPips(); track pip.code) {
+              <app-mana-pip [symbol]="pip" size="lg" decorative />
+            }
+          </span>
+        }
+        @if (d.author; as author) {
+          <span>
+            por <span class="font-medium text-text">{{ canEdit ? 'você' : author.name }}</span>
+          </span>
+        }
+        @if (activity(); as activity) {
+          <span aria-hidden="true" class="text-text-muted/50">·</span>
+          <time [attr.datetime]="activity.iso" [title]="activity.title">{{ activity.label }}</time>
+        }
+      </p>
+
+      @if (d.description) {
+        <p class="mt-3 line-clamp-3 max-w-2xl text-sm whitespace-pre-line text-text-muted">
+          {{ d.description }}
+        </p>
+      }
+    </div>
+
+    <div class="flex shrink-0 flex-wrap items-center gap-2">
+      <button
+        type="button"
+        (click)="run('hand')"
+        class="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-bg/60 px-3 text-sm text-text backdrop-blur transition-colors hover:border-cyan/50"
+      >
+        <svg lucideHand [size]="15" class="text-text-muted" />
+        Testar mão
+      </button>
+      <button
+        type="button"
+        (click)="run('export')"
+        class="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-bg/60 px-3 text-sm text-text backdrop-blur transition-colors hover:border-cyan/50"
+      >
+        <svg lucideDownload [size]="15" class="text-text-muted" />
+        Exportar
+      </button>
+
+      @if (canEdit) {
+        <button
+          type="button"
+          (click)="run('edit')"
+          class="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-bg/60 px-3 text-sm text-text backdrop-blur transition-colors hover:border-cyan/50"
+        >
+          <svg lucidePencil [size]="15" class="text-text-muted" />
+          Editar
+        </button>
+
+        <div #menu class="relative" (focusout)="onMenuFocusOut($event)">
+          <button
+            #menuButton
+            type="button"
+            (click)="menuOpen.set(!menuOpen())"
+            [attr.aria-expanded]="menuOpen()"
+            aria-controls="deck-actions-menu"
+            aria-label="Mais ações"
+            title="Mais ações"
+            class="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-bg/60 text-text-muted backdrop-blur transition-colors hover:border-cyan/50 hover:text-text"
+          >
+            <svg lucideEllipsis [size]="17" />
+          </button>
+
+          @if (menuOpen()) {
+            <div
+              id="deck-actions-menu"
+              class="absolute right-0 z-30 mt-2 w-56 rounded-lg border border-border bg-surface p-1 text-sm shadow-xl shadow-black/40 light:shadow-black/10"
+            >
+              <button
+                type="button"
+                (click)="run('import')"
+                class="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-text-muted transition-colors hover:bg-bg hover:text-text"
+              >
+                <svg lucideFileUp [size]="15" /> Importar lista
+              </button>
+              <button
+                type="button"
+                (click)="run('share')"
+                class="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-text-muted transition-colors hover:bg-bg hover:text-text"
+              >
+                <svg lucideLink [size]="15" /> Copiar link
+              </button>
+              <button
+                type="button"
+                (click)="run('duplicate')"
+                class="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-text-muted transition-colors hover:bg-bg hover:text-text"
+              >
+                <svg lucideCopy [size]="15" /> Duplicar deck
+              </button>
+              <div class="my-1 border-t border-border"></div>
+              <button
+                type="button"
+                (click)="run('delete')"
+                class="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-text-muted transition-colors hover:bg-bg hover:text-purple"
+              >
+                <svg lucideTrash [size]="15" /> Excluir deck
+              </button>
+            </div>
+          }
+        </div>
+      } @else if (auth.isAuthenticated()) {
+        <button
+          type="button"
+          (click)="run('duplicate')"
+          class="inline-flex h-9 items-center gap-1.5 rounded-md bg-gradient-brand px-3 text-sm font-medium text-on-brand transition-opacity hover:opacity-90"
+        >
+          <svg lucideCopy [size]="15" />
+          Copiar para meus decks
+        </button>
+      } @else {
+        <a
+          routerLink="/login"
+          [queryParams]="{ returnUrl: '/decks/' + d.id }"
+          class="inline-flex h-9 items-center rounded-md bg-gradient-brand px-3 text-sm font-medium text-on-brand transition-opacity hover:opacity-90"
+        >
+          Entre para copiar
+        </a>
+      }
+    </div>
+  </div>
+
+  <dl
+    class="relative grid grid-cols-2 border-t border-border bg-bg/30 sm:auto-cols-fr sm:grid-flow-col sm:grid-cols-none [&>div]:border-border [&>div]:px-5 [&>div]:py-3 [&>div:nth-child(even)]:border-l [&>div:nth-child(n+3)]:border-t sm:[&>div:nth-child(n+2)]:border-l sm:[&>div:nth-child(n+3)]:border-t-0 sm:[&>div]:px-6"
+  >
+    @let a = analysis();
+    <div>
+      <dt class="text-xs text-text-muted">Cartas</dt>
+      <dd class="mt-0.5 text-lg font-semibold text-text">
+        {{ a.deckCount }}
+        @if (a.sideCount > 0) {
+          <span class="text-sm font-normal text-text-muted">+ {{ a.sideCount }} side</span>
+        }
+      </dd>
+    </div>
+    @if (hasMana()) {
+      <div>
+        <dt class="text-xs text-text-muted">Custo médio</dt>
+        <dd
+          class="mt-0.5 text-lg font-semibold text-text"
+          title="Média do valor de mana, sem terrenos"
+        >
+          {{ averageCmc() }}
+        </dd>
+      </div>
+    }
+    @if (hasMana()) {
+      <div>
+        <dt class="text-xs text-text-muted">Terrenos</dt>
+        <dd class="mt-0.5 text-lg font-semibold text-text">
+          {{ lands().count }}
+          @if (lands().share; as share) {
+            <span class="text-sm font-normal text-text-muted">{{ share }} do deck</span>
+          }
+        </dd>
+      </div>
+    }
+    <div>
+      <dt class="text-xs text-text-muted">{{ formatName() }}</dt>
+      <dd class="mt-1 text-sm font-medium">
+        @switch (state.kind) {
+          @case ('casual') {
+            <span class="text-text-muted">Sem regras de formato</span>
+          }
+          @case ('valid') {
+            <span class="inline-flex items-center gap-1.5 text-cyan">
+              <svg lucideCircleCheck [size]="15" /> Deck válido
+            </span>
+          }
+          @default {
+            <a
+              href="#deck-issues"
+              class="inline-flex items-center gap-1.5 underline-offset-2 hover:underline"
+              [class]="state.kind === 'error' ? 'text-purple' : 'text-warning'"
+            >
+              <svg lucideTriangleAlert [size]="15" />
+              {{ state.count }} {{ state.count === 1 ? 'pendência' : 'pendências' }}
+            </a>
+          }
+        }
+      </dd>
+    </div>
+  </dl>
+</header>

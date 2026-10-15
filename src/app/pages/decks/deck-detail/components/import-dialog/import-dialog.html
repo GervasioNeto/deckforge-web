@@ -1,0 +1,133 @@
+@let p = parsed();
+
+<app-dialog
+  title="Importar lista"
+  subtitle="Cole a lista de outro site ou do MTG Arena. Uma carta por linha."
+  size="lg"
+  (closed)="closed.emit()"
+>
+  @if (notFound(); as missing) {
+    <div class="space-y-3">
+      <p class="flex items-start gap-2 text-sm text-text">
+        <svg lucideCircleAlert [size]="16" class="mt-0.5 shrink-0 text-warning" />
+        As outras cartas entraram no deck, mas
+        {{
+          missing.length === 1
+            ? 'esta não foi encontrada'
+            : 'estas ' + missing.length + ' não foram encontradas'
+        }}. Confira a grafia (em inglês) e adicione pela busca.
+      </p>
+      <ul
+        class="max-h-56 overflow-y-auto rounded-lg border border-border bg-bg/40 p-3 font-mono text-xs text-text"
+      >
+        @for (name of missing; track name) {
+          <li class="py-0.5">{{ name }}</li>
+        }
+      </ul>
+    </div>
+  } @else {
+    <label for="import-text" class="sr-only">Lista de cartas</label>
+    <textarea
+      id="import-text"
+      [value]="text()"
+      (input)="text.set($any($event.target).value)"
+      rows="12"
+      spellcheck="false"
+      [placeholder]="placeholder"
+      aria-describedby="import-summary"
+      class="w-full resize-y rounded-md border border-border bg-bg px-3 py-2 font-mono text-xs leading-relaxed text-text outline-none placeholder:text-text-muted/60 focus:border-cyan"
+    ></textarea>
+
+    <div id="import-summary" class="mt-2 min-h-5 text-xs text-text-muted" aria-live="polite">
+      @if (tooMany()) {
+        <span class="text-purple"
+          >A lista tem {{ p.entries.length }} linhas; o máximo é {{ maxLines }}.</span
+        >
+      } @else if (p.entries.length > 0) {
+        <span class="text-text"
+          >{{ p.entries.length }} {{ p.entries.length === 1 ? 'linha' : 'linhas' }}</span
+        >
+        · {{ summary() }}
+      }
+      @if (p.invalidLines.length > 0) {
+        <span class="text-warning">
+          · {{ p.invalidLines.length }} não
+          {{ p.invalidLines.length === 1 ? 'reconhecida' : 'reconhecidas' }} (linha
+          {{ p.invalidLines[0].line }}: “{{ p.invalidLines[0].text }}”)
+        </span>
+      }
+    </div>
+
+    <fieldset class="mt-4">
+      <legend class="sr-only">Como importar</legend>
+      <div class="grid gap-2 sm:grid-cols-2">
+        <label
+          class="flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors has-[:checked]:border-cyan has-[:checked]:bg-cyan/5 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-cyan"
+          [class.border-border]="replace()"
+        >
+          <input
+            type="radio"
+            name="import-mode"
+            [checked]="!replace()"
+            (change)="replace.set(false)"
+            class="mt-1 accent-cyan"
+          />
+          <span>
+            <span class="block text-sm font-medium text-text">Adicionar ao deck</span>
+            <span class="block text-xs text-text-muted">Soma às cartas que já estão nele.</span>
+          </span>
+        </label>
+        <label
+          class="flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors has-[:checked]:border-purple has-[:checked]:bg-purple/5 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-cyan"
+          [class.border-border]="!replace()"
+        >
+          <input
+            type="radio"
+            name="import-mode"
+            [checked]="replace()"
+            (change)="replace.set(true)"
+            class="mt-1 accent-purple"
+          />
+          <span>
+            <span class="block text-sm font-medium text-text">Substituir o deck</span>
+            <span class="block text-xs text-text-muted">Remove todas as cartas atuais antes.</span>
+          </span>
+        </label>
+      </div>
+    </fieldset>
+  }
+
+  <div dialogFooter class="contents">
+    @if (notFound()) {
+      <button
+        type="button"
+        (click)="close()"
+        class="h-9 rounded-md bg-gradient-brand px-4 text-sm font-medium text-on-brand transition-opacity hover:opacity-90"
+      >
+        Fechar
+      </button>
+    } @else {
+      <button
+        type="button"
+        (click)="close()"
+        class="h-9 rounded-md px-3 text-sm text-text-muted transition-colors hover:text-text"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        (click)="submit()"
+        [disabled]="!canSubmit()"
+        class="inline-flex h-9 items-center gap-2 rounded-md px-4 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
+        [class]="replace() ? 'bg-purple text-white' : 'bg-gradient-brand text-on-brand'"
+      >
+        @if (importing()) {
+          <svg lucideLoaderCircle [size]="15" class="animate-spin" />
+          Importando...
+        } @else {
+          {{ replace() ? 'Substituir deck' : 'Importar' }}
+        }
+      </button>
+    }
+  </div>
+</app-dialog>

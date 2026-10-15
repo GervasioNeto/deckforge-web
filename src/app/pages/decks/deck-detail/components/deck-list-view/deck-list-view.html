@@ -1,0 +1,61 @@
+<div class="gap-x-10 md:columns-2 2xl:columns-3">
+  @for (group of groups(); track group.key) {
+    <section class="mb-6 break-inside-avoid" [attr.aria-label]="group.label">
+      <h3
+        class="mb-1 flex items-baseline gap-2 border-b border-border pb-1.5 text-xs font-semibold tracking-wide text-text-muted uppercase"
+      >
+        {{ group.label }}
+        <span class="font-normal tabular-nums">{{ group.count }}</span>
+      </h3>
+
+      <ul>
+        @for (card of group.cards; track card.id) {
+          @let issue = cardIssues().get(card.id);
+          <li
+            class="group/row relative -mx-2 flex h-8 items-center gap-2 rounded-md px-2 transition-colors hover:bg-surface has-[button:focus-visible]:bg-surface"
+            (mouseenter)="preview.emit(card)"
+          >
+            <span class="w-6 shrink-0 text-right text-sm tabular-nums text-text-muted">
+              {{ card.quantity }}
+            </span>
+
+            <!-- The ::after overlay makes the whole row open the card. -->
+            <button
+              type="button"
+              (click)="inspect.emit(card)"
+              (focus)="preview.emit(card)"
+              class="min-w-0 flex-1 truncate text-left text-sm outline-none after:absolute after:inset-0 after:rounded-md group-hover/row:text-cyan"
+              [class]="issue ? 'text-purple' : 'text-text'"
+              [attr.aria-label]="
+                card.quantity + ' × ' + card.name + (issue ? ' (' + issue + ')' : '')
+              "
+            >
+              {{ card.name }}
+            </button>
+
+            @if (issue) {
+              <svg lucideTriangleAlert [size]="13" class="shrink-0 text-purple" [title]="issue" />
+            }
+
+            @if (hasMana()) {
+              <app-mana-cost [cost]="card.manaCost" size="sm" class="max-w-[45%] overflow-hidden" />
+            }
+
+            @if (canEdit()) {
+              <!-- Own slot at the row's end, filled only while hovering with a mouse (touch edits from the dialog). -->
+              <div class="relative z-10 hidden w-[4.75rem] shrink-0 justify-end pointer-fine:flex">
+                <app-quantity-stepper
+                  [value]="card.quantity"
+                  [name]="card.name"
+                  size="sm"
+                  (changed)="step(card, $event)"
+                  class="invisible group-focus-within/row:visible group-hover/row:visible"
+                />
+              </div>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+  }
+</div>
