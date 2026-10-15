@@ -36,10 +36,12 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
   {
+    // No guard: public decks open signed out too; the API answers 404 for private ones.
     path: 'decks/:deckId',
     loadComponent: () =>
       import('./pages/decks/deck-detail/deck-detail').then((m) => m.DeckDetail),
-    canActivate: [authGuard],
+    // Card stacks and grids need more room than the default column (see Shell).
+    data: { wide: true },
   },
   { path: '**', redirectTo: 'decks' },
 ];

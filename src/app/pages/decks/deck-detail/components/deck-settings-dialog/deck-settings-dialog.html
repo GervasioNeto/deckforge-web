@@ -1,0 +1,99 @@
+<app-dialog title="Editar deck" (closed)="closed.emit()">
+  <form id="deck-settings-form" [formGroup]="form" (ngSubmit)="save()" class="space-y-5">
+    <div>
+      @let nameInvalid = form.controls.name.invalid && form.controls.name.touched;
+      <label for="deck-name" class="mb-1 block text-sm text-text-muted">Nome</label>
+      <input
+        id="deck-name"
+        type="text"
+        formControlName="name"
+        [attr.maxlength]="nameMaxLength"
+        [attr.aria-invalid]="nameInvalid"
+        [attr.aria-describedby]="nameInvalid ? 'deck-name-error' : null"
+        class="h-10 w-full rounded-md border bg-bg px-3 text-text outline-none focus:border-cyan"
+        [class.border-border]="!nameInvalid"
+        [class.border-purple]="nameInvalid"
+      />
+      @if (nameInvalid) {
+        <p id="deck-name-error" class="mt-1 text-sm text-purple">Informe um nome para o deck.</p>
+      }
+    </div>
+
+    <div>
+      <label for="deck-format" class="mb-1 block text-sm text-text-muted">Formato</label>
+      <select
+        id="deck-format"
+        formControlName="format"
+        aria-describedby="deck-format-hint"
+        class="h-10 w-full rounded-md border border-border bg-bg px-3 text-text outline-none focus:border-cyan"
+      >
+        <option value="">Casual (sem formato)</option>
+        @for (format of formats; track format.id) {
+          <option [value]="format.id">{{ format.label }}</option>
+        }
+      </select>
+      <p id="deck-format-hint" class="mt-1 text-xs text-text-muted">
+        Com um formato, o deck é conferido contra as regras dele: tamanho, cópias e cartas banidas.
+      </p>
+    </div>
+
+    <fieldset>
+      <legend class="mb-1 text-sm text-text-muted">Visibilidade</legend>
+      <div class="grid gap-2 sm:grid-cols-2">
+        @for (option of visibilities; track option.id) {
+          <label
+            class="flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors has-[:checked]:border-cyan has-[:checked]:bg-cyan/5 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-cyan"
+            [class.border-border]="form.controls.visibility.value !== option.id"
+          >
+            <input type="radio" formControlName="visibility" [value]="option.id" class="sr-only" />
+            <span class="mt-0.5 text-text-muted">
+              @if (option.id === 'private') {
+                <svg lucideLock [size]="16" />
+              } @else {
+                <svg lucideGlobe [size]="16" />
+              }
+            </span>
+            <span>
+              <span class="block text-sm font-medium text-text">{{ option.label }}</span>
+              <span class="block text-xs text-text-muted">{{ option.hint }}</span>
+            </span>
+          </label>
+        }
+      </div>
+    </fieldset>
+
+    <div>
+      <div class="mb-1 flex items-baseline justify-between">
+        <label for="deck-description" class="text-sm text-text-muted">Descrição</label>
+        <span class="text-xs tabular-nums text-text-muted">
+          {{ form.controls.description.value.length }}/{{ descriptionMaxLength }}
+        </span>
+      </div>
+      <textarea
+        id="deck-description"
+        formControlName="description"
+        rows="4"
+        [attr.maxlength]="descriptionMaxLength"
+        placeholder="Estratégia, cartas-chave, como jogar contra..."
+        class="w-full resize-y rounded-md border border-border bg-bg px-3 py-2 text-sm text-text outline-none placeholder:text-text-muted/70 focus:border-cyan"
+      ></textarea>
+    </div>
+  </form>
+
+  <div dialogFooter class="contents">
+    <button
+      type="button"
+      (click)="cancel()"
+      class="h-9 rounded-md px-3 text-sm text-text-muted transition-colors hover:text-text"
+    >
+      Cancelar
+    </button>
+    <button
+      type="submit"
+      form="deck-settings-form"
+      class="h-9 rounded-md bg-gradient-brand px-4 text-sm font-medium text-on-brand transition-opacity hover:opacity-90"
+    >
+      Salvar
+    </button>
+  </div>
+</app-dialog>

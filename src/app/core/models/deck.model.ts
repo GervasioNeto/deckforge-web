@@ -1,4 +1,4 @@
-import type { DeckCard } from './card.model';
+import type { Board, DeckCard } from './card.model';
 
 export type GameType = 'mtg' | 'pokemon';
 export type DeckVisibility = 'public' | 'private';
@@ -23,23 +23,32 @@ export interface Deck {
   name: string;
   game: GameType;
   visibility: DeckVisibility;
+  /** Format id for the deck's game (see core/games); null means no format (casual). */
+  format?: string | null;
+  description?: string | null;
   createdAt?: string;
   updatedAt?: string;
-  /** Total cards (sum of quantities). Only sent by GET /api/decks once the backend supports it. */
+  /** Main deck plus commander (sum of quantities); sideboard and maybeboard don't count. */
   cardCount?: number;
-  /** Image for the deck's cover. Only sent by GET /api/decks once the backend supports it. */
+  /** Image for the deck's cover: the chosen card, the commander or the card with most copies. */
   coverImageUrl?: string | null;
-}
-
-/** Shape returned by GET /api/decks/:deckId: the deck plus its cards. */
-export interface DeckWithCards extends Deck {
-  cards: DeckCard[];
 }
 
 /** The only author fields the public endpoints expose (never the e-mail). */
 export interface DeckAuthor {
   id: string;
   name: string;
+}
+
+/** Shape returned by GET /api/decks/:deckId: the deck plus its cards. */
+export interface DeckWithCards extends Deck {
+  format: string | null;
+  description: string | null;
+  coverCardId: string | null;
+  /** False when someone else's public deck is being viewed. */
+  isOwner: boolean;
+  author: DeckAuthor | null;
+  cards: DeckCard[];
 }
 
 /** Shape returned by GET /api/decks/public: someone's public deck, without its cards. */
@@ -51,4 +60,34 @@ export interface CreateDeckPayload {
   name: string;
   game: GameType;
   visibility?: DeckVisibility;
+  format?: string | null;
+}
+
+/** PATCH /api/decks/:deckId: only the fields sent change. */
+export interface UpdateDeckPayload {
+  name?: string;
+  visibility?: DeckVisibility;
+  format?: string | null;
+  description?: string | null;
+  coverCardId?: string | null;
+}
+
+/** A card to add: by Scryfall id (from a search) or straight by name. */
+export type AddCardPayload = ({ externalId: string } | { name: string }) & {
+  quantity?: number;
+  board?: Board;
+};
+
+export interface ImportEntry {
+  name: string;
+  quantity: number;
+  board: Board;
+}
+
+export interface ImportResult {
+  deck: DeckWithCards;
+  /** Copies added (sum of quantities of the recognized lines). */
+  imported: number;
+  /** Names the API couldn't match to a card. */
+  notFound: string[];
 }

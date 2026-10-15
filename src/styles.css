@@ -24,6 +24,18 @@
   --color-card-frame-border: rgb(155 77 240 / 0.25);
   --color-card-frame-text: #b9a6e8;
 
+  /*
+   * Mana pips (shared/mana-pip), close to the printed symbols. Same in both
+   * themes: like the cards themselves, they're physical objects, not UI chrome.
+   */
+  --color-mana-w: #f8f3d2;
+  --color-mana-u: #a9dbf3;
+  --color-mana-b: #c9c0bc;
+  --color-mana-r: #f4a487;
+  --color-mana-g: #9fd0ae;
+  --color-mana-c: #cdc5c1;
+  --color-mana-ink: #17151b;
+
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -97,11 +109,54 @@
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
+
+  /*
+   * A select with a transparent background (e.g. the deck toolbar) passes its
+   * light text to the options, but Chrome on Linux/Windows draws the open list
+   * on white: give options the theme's colors so they stay readable in dark mode.
+   */
+  option {
+    background-color: var(--color-surface);
+    color: var(--color-text);
+  }
 }
 
 html,
 body {
   height: 100%;
+}
+
+/* An open modal (shared/dialog) keeps the page behind it from scrolling. */
+html:has(dialog[open]:modal) {
+  overflow: hidden;
+}
+
+dialog[open] {
+  animation: dialog-in 160ms ease-out;
+}
+
+dialog[open]::backdrop {
+  animation: backdrop-in 160ms ease-out;
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+}
+
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog[open],
+  dialog[open]::backdrop {
+    animation: none;
+  }
 }
 
 body {

@@ -13,10 +13,7 @@ import { DeckStack } from '../../../../shared/deck-stack/deck-stack';
 })
 export class PublicDeckCard {
   readonly deck = input.required<PublicDeck>();
-  /**
-   * The signed-in user's own deck. Only these link anywhere: GET /decks/:deckId
-   * serves the owner alone, and there is no public detail route yet.
-   */
+  /** The signed-in user's own deck, badged "Seu deck". Every public deck opens its detail page. */
   readonly owned = input(false);
 
   protected readonly accent = computed(() => GAME_ACCENTS[this.deck().game]);

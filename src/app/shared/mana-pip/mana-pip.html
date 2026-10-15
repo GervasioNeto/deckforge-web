@@ -1,0 +1,40 @@
+@let px = sizes().icon;
+@switch (glyph()) {
+  @case ('W') {
+    <svg lucideSun [size]="px" [strokeWidth]="2.75" />
+  }
+  @case ('U') {
+    <svg lucideDroplet [size]="px" [strokeWidth]="2.75" />
+  }
+  @case ('B') {
+    <svg lucideSkull [size]="px" [strokeWidth]="2.5" />
+  }
+  @case ('R') {
+    <svg lucideFlame [size]="px" [strokeWidth]="2.75" />
+  }
+  @case ('G') {
+    <svg lucideTreePine [size]="px" [strokeWidth]="2.75" />
+  }
+  @case ('C') {
+    <svg lucideDiamond [size]="px" [strokeWidth]="2.75" />
+  }
+  @case ('S') {
+    <svg lucideSnowflake [size]="px" [strokeWidth]="2.5" />
+  }
+  @case ('T') {
+    <svg lucideRotateCw [size]="px" [strokeWidth]="3" />
+  }
+  @case ('Q') {
+    <svg lucideRotateCcw [size]="px" [strokeWidth]="3" />
+  }
+  @case ('E') {
+    <svg lucideZap [size]="px" [strokeWidth]="2.75" />
+  }
+  @case ('phyrexian') {
+    <!-- The Phyrexian symbol is a circle crossed by a bar, much like Φ. -->
+    <span class="font-bold leading-none" [class]="sizes().text">Φ</span>
+  }
+  @case ('text') {
+    <span class="font-bold leading-none tabular-nums" [class]="sizes().text">{{ text() }}</span>
+  }
+}

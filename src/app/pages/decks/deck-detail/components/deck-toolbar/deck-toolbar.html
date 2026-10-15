@@ -1,0 +1,78 @@
+<div class="flex flex-wrap items-center gap-2">
+  <div
+    class="flex h-9 rounded-md border border-border bg-surface p-0.5 text-sm"
+    role="group"
+    aria-label="Visualização"
+  >
+    @for (mode of modes; track mode.id) {
+      @let selected = prefs.mode() === mode.id;
+      <button
+        type="button"
+        (click)="prefs.mode.set(mode.id)"
+        [attr.aria-pressed]="selected"
+        [title]="mode.label"
+        class="flex items-center gap-1.5 rounded px-2.5 transition-colors"
+        [class]="selected ? 'bg-bg font-medium text-text' : 'text-text-muted hover:text-text'"
+      >
+        @switch (mode.id) {
+          @case ('list') {
+            <svg lucideList [size]="15" />
+          }
+          @case ('stacks') {
+            <svg lucideGalleryVerticalEnd [size]="15" />
+          }
+          @case ('grid') {
+            <svg lucideLayoutGrid [size]="15" />
+          }
+        }
+        <span class="max-sm:sr-only">{{ mode.label }}</span>
+      </button>
+    }
+  </div>
+
+  <label
+    class="flex h-9 items-center gap-1.5 rounded-md border border-border bg-surface pl-3 text-sm transition-colors focus-within:border-cyan hover:border-text-muted/40"
+  >
+    <span class="text-text-muted">Agrupar</span>
+    <select
+      (change)="prefs.grouping.set($any($event.target).value)"
+      class="h-full cursor-pointer rounded-r-md bg-transparent pr-2 font-medium text-text outline-none"
+    >
+      @for (option of groupings(); track option.id) {
+        <option [value]="option.id" [selected]="option.id === grouping()">
+          {{ option.label }}
+        </option>
+      }
+    </select>
+  </label>
+
+  <label
+    class="flex h-9 items-center gap-1.5 rounded-md border border-border bg-surface pl-3 text-sm transition-colors focus-within:border-cyan hover:border-text-muted/40"
+  >
+    <span class="text-text-muted">Ordenar</span>
+    <select
+      (change)="prefs.sort.set($any($event.target).value)"
+      class="h-full cursor-pointer rounded-r-md bg-transparent pr-2 font-medium text-text outline-none"
+    >
+      @for (sort of sorts; track sort[0]) {
+        <option [value]="sort[0]" [selected]="sort[0] === prefs.sort()">{{ sort[1] }}</option>
+      }
+    </select>
+  </label>
+
+  <div class="relative w-full sm:ml-auto sm:w-56">
+    <svg
+      lucideFunnel
+      [size]="14"
+      class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-text-muted"
+    />
+    <input
+      type="search"
+      [value]="filter()"
+      (input)="filter.set($any($event.target).value)"
+      placeholder="Filtrar cartas"
+      aria-label="Filtrar cartas do deck por nome ou tipo"
+      class="h-9 w-full rounded-md border border-border bg-surface pr-3 pl-8 text-sm text-text outline-none transition-colors placeholder:text-text-muted/70 hover:border-text-muted/40 focus:border-cyan"
+    />
+  </div>
+</div>

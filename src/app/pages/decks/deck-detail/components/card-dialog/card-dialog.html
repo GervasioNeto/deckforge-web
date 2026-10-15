@@ -1,0 +1,171 @@
+@let c = card();
+@let m = meta();
+
+<app-dialog [title]="c.name" [subtitle]="c.typeLine" size="xl" (closed)="closed.emit()">
+  <div class="grid gap-6 sm:grid-cols-[minmax(0,16rem)_1fr]">
+    <div class="mx-auto w-full max-w-64 sm:mx-0">
+      <app-card-image
+        [src]="image()"
+        [name]="c.name"
+        [typeLine]="c.typeLine"
+        eager
+        class="shadow-xl shadow-black/40 light:shadow-black/15"
+      />
+      <div class="mt-3 flex flex-wrap gap-2">
+        @if (c.backImageUrl) {
+          <button
+            type="button"
+            (click)="showBack.set(!showBack())"
+            class="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-2.5 text-xs text-text transition-colors hover:border-cyan/50"
+          >
+            <svg lucideRefreshCw [size]="13" class="text-text-muted" />
+            {{ showBack() ? 'Ver frente' : 'Ver verso' }}
+          </button>
+        }
+        @if (c.scryfallUrl) {
+          <a
+            [href]="c.scryfallUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-2.5 text-xs text-text transition-colors hover:border-cyan/50"
+          >
+            Ver na Scryfall
+            <svg lucideExternalLink [size]="13" class="text-text-muted" />
+          </a>
+        }
+      </div>
+    </div>
+
+    <div class="min-w-0 space-y-5">
+      @if (issue(); as issue) {
+        <p
+          class="flex items-start gap-2 rounded-lg border border-purple/30 bg-purple/5 px-3 py-2 text-sm text-text"
+          role="note"
+        >
+          <svg lucideTriangleAlert [size]="15" class="mt-0.5 shrink-0 text-purple" />
+          {{ issue }}
+        </p>
+      }
+
+      @if (c.faces; as faces) {
+        @for (face of faces; track $index) {
+          <div class="space-y-2" [class]="$first ? '' : 'border-t border-border pt-4'">
+            <div class="flex items-start justify-between gap-3">
+              <p class="font-medium text-text">{{ face.name }}</p>
+              <app-mana-cost [cost]="face.manaCost" size="lg" />
+            </div>
+            <p class="text-xs text-text-muted">{{ face.typeLine }}</p>
+            @if (face.text) {
+              <app-rules-text [text]="face.text" />
+            }
+            @if (face.loyalty) {
+              <p class="text-sm font-semibold text-text">Lealdade {{ face.loyalty }}</p>
+            } @else if (face.power !== null && face.toughness !== null) {
+              <p class="text-sm font-semibold tabular-nums text-text">
+                {{ face.power }}/{{ face.toughness }}
+              </p>
+            }
+          </div>
+        }
+      } @else {
+        <div class="flex items-center justify-between gap-3">
+          <app-mana-cost [cost]="c.manaCost" size="lg" />
+          @if (store.rules().hasMana) {
+            <span class="text-xs text-text-muted">Valor de mana {{ c.cmc }}</span>
+          }
+        </div>
+        @if (c.text) {
+          <app-rules-text [text]="c.text" />
+        }
+        @if (m.stats) {
+          <p class="text-sm font-semibold tabular-nums text-text">{{ m.stats }}</p>
+        }
+      }
+
+      <dl
+        class="grid grid-cols-2 gap-x-4 gap-y-3 rounded-lg border border-border bg-bg/40 p-3 text-sm"
+      >
+        <div>
+          <dt class="text-xs text-text-muted">Edição</dt>
+          <dd class="mt-0.5 text-text">{{ m.set || '—' }}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-text-muted">Raridade</dt>
+          <dd class="mt-0.5 text-text">{{ m.rarity ?? '—' }}</dd>
+        </div>
+      </dl>
+
+      @if (legalities().length > 0) {
+        <section>
+          <h3 class="text-xs font-semibold tracking-wide text-text-muted uppercase">Legalidade</h3>
+          <ul class="mt-2 grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-3">
+            @for (format of legalities(); track format.id) {
+              <li class="flex items-center gap-2">
+                <span
+                  class="h-2 w-2 shrink-0 rounded-full"
+                  [class]="format.dot"
+                  aria-hidden="true"
+                ></span>
+                <span class="text-text">{{ format.format }}</span>
+                <span class="ml-auto text-xs text-text-muted">{{ format.status }}</span>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
+      @if (store.canEdit()) {
+        <section>
+          <h3 class="text-xs font-semibold tracking-wide text-text-muted uppercase">No deck</h3>
+          <ul class="mt-2 divide-y divide-border rounded-lg border border-border">
+            @for (placement of placements(); track placement.board) {
+              @let entry = placement.entry;
+              <li class="flex items-center gap-3 px-3 py-2">
+                <span class="min-w-0 flex-1 truncate text-sm text-text">{{ placement.label }}</span>
+                @if (entry) {
+                  <label
+                    class="relative flex h-8 items-center text-text-muted hover:text-text"
+                    title="Mover todas as cópias"
+                  >
+                    <svg
+                      lucideArrowRightLeft
+                      [size]="14"
+                      class="pointer-events-none absolute left-2"
+                    />
+                    <span class="sr-only">Mover cópias de {{ placement.label }} para</span>
+                    <select
+                      (change)="onMove(entry, $event)"
+                      class="h-8 w-[6.5rem] cursor-pointer appearance-none rounded-md border border-border bg-surface pr-2 pl-7 text-xs text-text outline-none focus:border-cyan"
+                    >
+                      <option value="" selected disabled>Mover…</option>
+                      @for (target of placements(); track target.board) {
+                        @if (target.board !== placement.board) {
+                          <option [value]="target.board">{{ target.label }}</option>
+                        }
+                      }
+                    </select>
+                  </label>
+                }
+                <app-quantity-stepper
+                  [value]="entry?.quantity ?? 0"
+                  [name]="c.name"
+                  (changed)="change(placement.board, $event)"
+                />
+              </li>
+            }
+          </ul>
+
+          <button
+            type="button"
+            (click)="setCover()"
+            [disabled]="isCover() || !inDeck()"
+            class="mt-3 inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-2.5 text-xs text-text transition-colors hover:border-cyan/50 disabled:opacity-50 disabled:hover:border-border"
+          >
+            <svg lucideImage [size]="13" class="text-text-muted" />
+            {{ isCover() ? 'Capa do deck' : 'Usar como capa do deck' }}
+          </button>
+        </section>
+      }
+    </div>
+  </div>
+</app-dialog>

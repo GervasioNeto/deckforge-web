@@ -1,0 +1,83 @@
+<app-dialog
+  title="Testar mão inicial"
+  subtitle="Embaralhado a partir do deck principal"
+  size="full"
+  (closed)="closed.emit()"
+>
+  @if (!enoughCards()) {
+    <div class="flex flex-col items-center gap-2 py-10 text-center">
+      <svg lucideHand [size]="28" class="text-text-muted" />
+      <p class="text-sm text-text-muted">
+        O deck principal precisa de pelo menos 7 cartas para testar uma mão.
+      </p>
+    </div>
+  } @else {
+    <div
+      class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-text-muted"
+      aria-live="polite"
+    >
+      <span>
+        <span class="font-medium text-text tabular-nums">{{ hand().length }}</span>
+        {{ hand().length === 1 ? 'carta' : 'cartas' }} na mão
+      </span>
+      <span aria-hidden="true">·</span>
+      <span>
+        <span class="tabular-nums">{{ remaining() }}</span>
+        no grimório
+      </span>
+      @if (mulligans() > 0) {
+        <span class="rounded-full bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
+          Mulligan {{ mulligans() }}: coloque {{ mulligans() }}
+          {{ mulligans() === 1 ? 'carta' : 'cartas' }} no fundo do grimório
+        </span>
+      }
+    </div>
+
+    <!-- Seven across on wide screens: the opening hand reads in one row, cards big enough to read. -->
+    <ul class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+      @for (card of hand(); track $index) {
+        <li
+          class="rounded-[4.75%/3.4%] transition duration-150 hover:-translate-y-2 hover:shadow-xl hover:shadow-black/40 motion-reduce:transition-none light:hover:shadow-black/15"
+          [title]="card.name"
+        >
+          <app-card-image
+            [src]="card.imageUrl"
+            [name]="card.name"
+            [typeLine]="card.typeLine"
+            eager
+          />
+        </li>
+      }
+    </ul>
+  }
+
+  <div dialogFooter class="contents">
+    @if (enoughCards()) {
+      <button
+        type="button"
+        (click)="draw()"
+        [disabled]="remaining() === 0"
+        class="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm text-text transition-colors hover:border-cyan/50 disabled:opacity-50"
+      >
+        <svg lucidePlus [size]="15" class="text-text-muted" />
+        Comprar carta
+      </button>
+      <button
+        type="button"
+        (click)="mulligan()"
+        class="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm text-text transition-colors hover:border-cyan/50"
+      >
+        <svg lucideRotateCcw [size]="15" class="text-text-muted" />
+        Mulligan
+      </button>
+      <button
+        type="button"
+        (click)="newHand()"
+        class="inline-flex h-9 items-center gap-1.5 rounded-md bg-gradient-brand px-4 text-sm font-medium text-on-brand transition-opacity hover:opacity-90"
+      >
+        <svg lucideShuffle [size]="15" />
+        Nova mão
+      </button>
+    }
+  </div>
+</app-dialog>

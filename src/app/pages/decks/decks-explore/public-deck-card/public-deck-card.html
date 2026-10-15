@@ -1,12 +1,7 @@
 @let d = deck();
 
 <article
-  class="group relative flex h-full flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-card transition"
-  [class]="
-    owned()
-      ? 'hover:-translate-y-0.5 hover:border-cyan/40 hover:shadow-card-hover has-[a:focus-visible]:border-cyan'
-      : ''
-  "
+  class="group relative flex h-full flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-card transition hover:-translate-y-0.5 hover:border-cyan/40 hover:shadow-card-hover has-[a:focus-visible]:border-cyan"
 >
   <!-- Cover: the game's accent glows up from the bottom edge, behind the card stack. -->
   <div
@@ -32,17 +27,13 @@
 
   <div class="flex flex-1 flex-col gap-3 p-4">
     <h2 class="truncate font-medium text-text" [title]="d.name">
-      @if (owned()) {
-        <!-- The ::after overlay stretches the link over the whole card. -->
-        <a
-          [routerLink]="['/decks', d.id]"
-          class="outline-none after:absolute after:inset-0 after:rounded-lg"
-        >
-          {{ d.name }}
-        </a>
-      } @else {
+      <!-- The ::after overlay stretches the link over the whole card. -->
+      <a
+        [routerLink]="['/decks', d.id]"
+        class="outline-none after:absolute after:inset-0 after:rounded-lg"
+      >
         {{ d.name }}
-      }
+      </a>
     </h2>
 
     <p class="mt-auto flex min-w-0 items-center gap-2 text-xs text-text-muted">
