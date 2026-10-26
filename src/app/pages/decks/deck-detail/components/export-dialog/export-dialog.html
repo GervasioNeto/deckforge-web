@@ -1,0 +1,71 @@
+<app-dialog
+  title="Exportar deck"
+  [subtitle]="store.deck()?.name ?? null"
+  size="lg"
+  (closed)="closed.emit()"
+>
+  @if (store.rules().hasMana) {
+    <div class="mb-3 flex flex-wrap items-center gap-3">
+      <div
+        class="flex h-9 rounded-md border border-border bg-bg p-0.5 text-sm"
+        role="group"
+        aria-label="Formato do texto"
+      >
+        @for (option of styles; track option.id) {
+          <button
+            type="button"
+            (click)="setStyle(option.id)"
+            [attr.aria-pressed]="style() === option.id"
+            class="rounded px-3 transition-colors"
+            [class]="
+              style() === option.id
+                ? 'bg-surface font-medium text-text'
+                : 'text-text-muted hover:text-text'
+            "
+          >
+            {{ option.label }}
+          </button>
+        }
+      </div>
+      @for (option of styles; track option.id) {
+        @if (style() === option.id) {
+          <p class="text-xs text-text-muted">{{ option.hint }}</p>
+        }
+      }
+    </div>
+  }
+
+  <label for="export-text" class="sr-only">Lista do deck</label>
+  <textarea
+    #output
+    id="export-text"
+    readonly
+    rows="14"
+    spellcheck="false"
+    [value]="text()"
+    (focus)="$any($event.target).select()"
+    class="w-full resize-y rounded-md border border-border bg-bg px-3 py-2 font-mono text-xs leading-relaxed text-text outline-none focus:border-cyan"
+  ></textarea>
+
+  <div dialogFooter class="contents">
+    <button
+      type="button"
+      (click)="download()"
+      class="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm text-text transition-colors hover:border-cyan/50"
+    >
+      <svg lucideDownload [size]="15" class="text-text-muted" />
+      Baixar .txt
+    </button>
+    <button
+      type="button"
+      (click)="copy()"
+      class="inline-flex h-9 items-center gap-1.5 rounded-md bg-gradient-brand px-4 text-sm font-medium text-on-brand transition-opacity hover:opacity-90"
+    >
+      @if (copied()) {
+        <svg lucideCheck [size]="15" /> Copiado
+      } @else {
+        <svg lucideCopy [size]="15" /> Copiar
+      }
+    </button>
+  </div>
+</app-dialog>

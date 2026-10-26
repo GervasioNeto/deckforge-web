@@ -2,6 +2,7 @@ import { Component, OnInit, inject, input, output, signal } from '@angular/core'
 import { DeckCard } from '../../../../core/models/card.model';
 import { Deck } from '../../../../core/models/deck.model';
 import { Decks } from '../../../../core/services/decks';
+import { artCropFallback, toArtCrop } from '../../../../core/utils/scryfall-image';
 
 export interface DeckStats {
   cardCount: number;
@@ -11,11 +12,11 @@ export interface DeckStats {
 /**
  * Cover art for a deck in the list; also reports the card count to the parent.
  *
- * GET /api/decks doesn't send `coverImageUrl`/`cardCount` yet, so this fetches
- * GET /api/decks/:id per deck. The list renders it inside `@defer (on viewport)`
- * so only decks scrolled into view are fetched, and passes back `stats` it
- * already has (e.g. after a filter re-creates the card). Once the backend sends
- * both fields, no request is made.
+ * GET /api/decks sends `coverImageUrl`/`cardCount`, so normally no request is
+ * made. Against an older backend without them, this fetches GET /api/decks/:id
+ * per deck; the list renders it inside `@defer (on viewport)` so only decks
+ * scrolled into view are fetched, and passes back `stats` it already has (e.g.
+ * after a filter re-creates the card).
  */
 @Component({
   selector: 'app-deck-cover',
@@ -60,9 +61,7 @@ export class DeckCover implements OnInit {
 
   /** Art crop failed (or isn't a Scryfall URL): fall back to the full card, then to no image. */
   protected onImageError(): void {
-    const current = this.imageUrl();
-    const fullCard = current?.replace('/art_crop/', '/normal/') ?? null;
-    this.imageUrl.set(fullCard !== current ? fullCard : null);
+    this.imageUrl.set(artCropFallback(this.imageUrl()));
   }
 
   private showImage(url: string | null): void {
@@ -80,11 +79,4 @@ function pickCoverImage(cards: DeckCard[]): string | null {
     }
   }
   return best?.imageUrl ?? null;
-}
-
-/** Scryfall serves just the artwork at the same path with `art_crop` instead of `normal`. */
-function toArtCrop(url: string): string {
-  return url.startsWith('https://cards.scryfall.io/normal/')
-    ? url.replace('/normal/', '/art_crop/')
-    : url;
 }

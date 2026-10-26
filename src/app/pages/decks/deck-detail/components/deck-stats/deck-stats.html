@@ -1,0 +1,128 @@
+@let a = analysis();
+
+<div class="grid gap-4 md:grid-cols-3">
+  @if (a.deckCount === 0) {
+    <p
+      class="rounded-xl border border-dashed border-border p-4 text-sm text-text-muted md:col-span-3"
+    >
+      A curva de mana, as cores e os tipos aparecem quando o deck tiver cartas.
+    </p>
+  } @else {
+    @if (curve().bars.length > 0) {
+      @let c = curve();
+      <figure class="rounded-xl border border-border bg-surface p-4 shadow-card">
+        <figcaption class="flex items-baseline justify-between gap-2">
+          <span class="text-sm font-medium text-text">Curva de mana</span>
+          <span class="text-xs text-text-muted">{{ c.total }} sem terrenos</span>
+        </figcaption>
+
+        <div class="mt-3 pt-5" aria-hidden="true">
+          <div class="flex h-24 items-end gap-1 border-b border-border">
+            @for (bar of c.bars; track bar.cmc) {
+              <div class="group/bar relative flex h-full flex-1 items-end justify-center">
+                @if (bar.count > 0) {
+                  <span
+                    class="absolute text-[11px] font-medium tabular-nums text-text-muted"
+                    [style.bottom]="'calc(' + bar.height + '% + 3px)'"
+                  >
+                    {{ bar.count }}
+                  </span>
+                  <div
+                    class="w-full max-w-6 min-h-0.5 rounded-t-[4px] transition-opacity group-hover/bar:opacity-80"
+                    [class]="fill()"
+                    [style.height.%]="bar.height"
+                  ></div>
+                  <!-- Hover detail: the cap label already shows the count. -->
+                  <div
+                    class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-6 hidden -translate-x-1/2 rounded-md border border-border bg-bg px-2 py-1 text-xs whitespace-nowrap text-text shadow-lg group-hover/bar:block"
+                  >
+                    Custo {{ bar.label }} ·
+                    <span class="tabular-nums">{{ bar.count }}</span>
+                    {{ bar.count === 1 ? 'carta' : 'cartas' }}
+                    <span class="text-text-muted">({{ bar.share }})</span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+          <div class="mt-1.5 flex gap-1">
+            @for (bar of c.bars; track bar.cmc) {
+              <span class="flex-1 text-center text-[11px] tabular-nums text-text-muted">
+                {{ bar.label }}
+              </span>
+            }
+          </div>
+        </div>
+
+        <table class="sr-only">
+          <caption>
+            Cartas por custo de mana, sem terrenos
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Custo</th>
+              <th scope="col">Cartas</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (bar of c.bars; track bar.cmc) {
+              <tr>
+                <td>{{ bar.label }}</td>
+                <td>{{ bar.count }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </figure>
+    }
+
+    @if (colors().length > 0) {
+      <section class="rounded-xl border border-border bg-surface p-4 shadow-card">
+        <h3 class="text-sm font-medium text-text">Símbolos de mana</h3>
+        <ul class="mt-3 space-y-2.5">
+          @for (entry of colors(); track entry.color) {
+            <li class="flex items-center gap-2.5 text-sm">
+              <app-mana-pip [symbol]="entry.pip" decorative />
+              <span class="w-16 shrink-0 text-text-muted">{{ entry.name }}</span>
+              <span
+                class="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-border"
+                aria-hidden="true"
+              >
+                <span
+                  class="block h-full rounded-full"
+                  [class]="fill()"
+                  [style.width.%]="entry.share * 100"
+                ></span>
+              </span>
+              <span class="w-8 shrink-0 text-right tabular-nums text-text">{{ entry.count }}</span>
+              <span class="w-9 shrink-0 text-right text-xs tabular-nums text-text-muted">
+                {{ entry.shareLabel }}
+              </span>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
+    <section class="rounded-xl border border-border bg-surface p-4 shadow-card">
+      <h3 class="text-sm font-medium text-text">Tipos</h3>
+      <ul class="mt-3 space-y-2">
+        @for (type of a.types; track type.key) {
+          <li class="flex items-center gap-2.5 text-sm">
+            <span class="w-40 shrink-0 truncate text-text-muted">{{ type.label }}</span>
+            <span
+              class="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-border"
+              aria-hidden="true"
+            >
+              <span
+                class="block h-full rounded-full bg-text-muted/50"
+                [style.width.%]="(type.count / typeMax()) * 100"
+              ></span>
+            </span>
+            <span class="w-8 shrink-0 text-right tabular-nums text-text">{{ type.count }}</span>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+</div>
