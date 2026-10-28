@@ -42,8 +42,10 @@ const BOARD_HEADERS: [RegExp, Board][] = [
 const IGNORED = [/^total cards?\b/i, /^\*{3,}.*\*{3,}$/];
 
 // "4 Name SET 123": quantity, name, then optionally the set code and number.
+// A set code has at least one capital letter, but may start with a digit
+// ("30C", 30th Celebration); none is digits only (the "151" set is "MEW").
 const ENTRY =
-  /^(?:(\d{1,3})\s*[xX]?\s+)?(.+?)(?:\s+([A-Z][A-Za-z0-9-]{1,9})\s+([A-Za-z]{0,6}\d+[a-z]?))?$/;
+  /^(?:(\d{1,3})\s*[xX]?\s+)?(.+?)(?:\s+((?=[A-Za-z0-9-]*[A-Z])[A-Z0-9][A-Za-z0-9-]{1,9})\s+([A-Za-z]{0,6}\d+[a-z]?))?$/;
 
 /** "Basic {R} Energy" → "Basic Fire Energy", the name the API knows. */
 export function readCardName(name: string): string {

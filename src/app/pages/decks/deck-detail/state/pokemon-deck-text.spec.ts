@@ -115,6 +115,15 @@ describe('parsePokemonDeckList', () => {
     ]);
   });
 
+  it('reads set codes that start with a digit, and names with dots', () => {
+    const { entries } = parsePokemonDeckList('4 Ultra Ball 30C 128\n3 Pokégear 3.0 BLK 84');
+
+    expect(entries).toEqual([
+      { name: 'Ultra Ball', quantity: 4, board: 'main' },
+      { name: 'Pokégear 3.0', quantity: 3, board: 'main' },
+    ]);
+  });
+
   it('puts cards after a maybeboard header there, and reports lines that are not cards', () => {
     const { entries, invalidLines } = parsePokemonDeckList(
       "4 Iono PAL 185\nMaybeboard\n1 Boss's Orders PAL 172\n12",
