@@ -1,0 +1,153 @@
+<app-dialog
+  title="Testar mão inicial"
+  subtitle="Embaralhado a partir do deck, com os 6 prêmios separados"
+  size="full"
+  (closed)="closed.emit()"
+>
+  @if (!enoughCards()) {
+    <div class="flex flex-col items-center gap-2 py-10 text-center">
+      <svg lucideHand [size]="28" class="text-text-muted" />
+      <p class="text-sm text-text-muted">
+        O deck precisa de pelo menos 13 cartas para testar uma mão: 7 na mão e 6 nos prêmios.
+      </p>
+    </div>
+  } @else {
+    <div
+      class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-text-muted"
+      aria-live="polite"
+    >
+      <span>
+        <span class="font-medium text-text tabular-nums">{{ hand().length }}</span>
+        {{ hand().length === 1 ? 'carta' : 'cartas' }} na mão
+      </span>
+      <span aria-hidden="true">·</span>
+      <span>
+        <span class="tabular-nums">{{ remaining() }}</span>
+        no baralho
+      </span>
+      @if (mulligans() > 0) {
+        <span class="rounded-full bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
+          {{ mulligans() }} {{ mulligans() === 1 ? 'mulligan' : 'mulligans' }}: o oponente pode
+          comprar {{ mulligans() }} {{ mulligans() === 1 ? 'carta extra' : 'cartas extras' }}
+        </span>
+      }
+    </div>
+
+    @if (!hasBasic()) {
+      <p
+        class="mt-3 flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 px-3 py-2 text-sm text-text"
+        role="alert"
+      >
+        <svg lucideTriangleAlert [size]="15" class="mt-0.5 shrink-0 text-warning" />
+        Nenhum Pokémon Básico na mão: pelas regras, o mulligan é obrigatório. Revele a mão,
+        embaralhe e compre 7 de novo.
+      </p>
+    }
+
+    <ul class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+      @for (card of hand(); track $index) {
+        <li
+          class="rounded-[4.75%/3.4%] transition duration-150 hover:-translate-y-2 hover:shadow-xl hover:shadow-black/40 motion-reduce:transition-none light:hover:shadow-black/15"
+          [title]="card.name"
+        >
+          <app-card-image
+            [src]="thumbnail(card.imageUrl)"
+            [name]="card.name"
+            [typeLine]="card.typeLine"
+            eager
+          />
+        </li>
+      }
+    </ul>
+
+    <!-- Prize cards are only set aside once the hand is kept, i.e. it has a Basic. -->
+    @if (hasBasic()) {
+      <section class="mt-6 border-t border-border pt-4" aria-labelledby="prizes-title">
+        <div class="flex items-center justify-between gap-3">
+          <h3 id="prizes-title" class="text-sm font-medium text-text">
+            Prêmios
+            <span class="ml-1 font-normal tabular-nums text-text-muted">{{ prizes().length }}</span>
+          </h3>
+          <button
+            type="button"
+            (click)="prizesRevealed.set(!prizesRevealed())"
+            [attr.aria-pressed]="prizesRevealed()"
+            class="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-2.5 text-xs text-text transition-colors hover:border-cyan/50"
+          >
+            <svg lucideEye [size]="13" class="text-text-muted" />
+            {{ prizesRevealed() ? 'Virar para baixo' : 'Revelar prêmios' }}
+          </button>
+        </div>
+
+        <ul class="mt-3 grid max-w-3xl grid-cols-3 gap-3 sm:grid-cols-6">
+          @for (card of prizes(); track $index) {
+            <li [title]="prizesRevealed() ? card.name : 'Carta de prêmio'">
+              @if (prizesRevealed()) {
+                <app-card-image
+                  [src]="thumbnail(card.imageUrl)"
+                  [name]="card.name"
+                  [typeLine]="card.typeLine"
+                  eager
+                />
+              } @else {
+                <!-- Face down: the app's card sleeve (see shared/deck-stack). -->
+                <div
+                  class="card-frame relative flex aspect-[63/88] items-center justify-center rounded-[4.75%/3.4%]"
+                  role="img"
+                  aria-label="Carta de prêmio virada para baixo"
+                >
+                  <span
+                    class="absolute inset-1.5 rounded-sm border border-card-frame-border"
+                  ></span>
+                  <svg class="h-6 w-6 text-cyan/70" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10 1c.6 5 4 8.4 9 9-5 .6-8.4 4-9 9-.6-5-4-8.4-9-9 5-.6 8.4-4 9-9Z" />
+                  </svg>
+                </div>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  }
+
+  <div dialogFooter class="contents">
+    @if (enoughCards()) {
+      <button
+        type="button"
+        (click)="draw()"
+        [disabled]="remaining() === 0 || !hasBasic()"
+        class="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm text-text transition-colors hover:border-cyan/50 disabled:opacity-50"
+      >
+        <svg lucidePlus [size]="15" class="text-text-muted" />
+        Comprar carta
+      </button>
+      <button
+        type="button"
+        (click)="mulligan()"
+        class="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-sm transition-colors"
+        [class]="
+          hasBasic()
+            ? 'border border-border text-text hover:border-cyan/50'
+            : 'bg-gradient-brand font-medium text-on-brand hover:opacity-90'
+        "
+      >
+        <svg lucideRotateCcw [size]="15" [class]="hasBasic() ? 'text-text-muted' : ''" />
+        Mulligan
+      </button>
+      <button
+        type="button"
+        (click)="newHand()"
+        class="inline-flex h-9 items-center gap-1.5 rounded-md px-4 text-sm font-medium transition-opacity hover:opacity-90"
+        [class]="
+          hasBasic()
+            ? 'bg-gradient-brand text-on-brand'
+            : 'border border-border font-normal text-text hover:border-cyan/50'
+        "
+      >
+        <svg lucideShuffle [size]="15" />
+        Nova mão
+      </button>
+    }
+  </div>
+</app-dialog>

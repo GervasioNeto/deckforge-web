@@ -2,7 +2,7 @@
 
 <app-dialog
   title="Importar lista"
-  subtitle="Cole a lista de outro site ou do MTG Arena. Uma carta por linha."
+  [subtitle]="format.importHint"
   size="lg"
   (closed)="closed.emit()"
 >
@@ -15,7 +15,7 @@
           missing.length === 1
             ? 'esta não foi encontrada'
             : 'estas ' + missing.length + ' não foram encontradas'
-        }}. Confira a grafia (em inglês) e adicione pela busca.
+        }}. {{ format.notFoundHint }}
       </p>
       <ul
         class="max-h-56 overflow-y-auto rounded-lg border border-border bg-bg/40 p-3 font-mono text-xs text-text"
@@ -33,7 +33,7 @@
       (input)="text.set($any($event.target).value)"
       rows="12"
       spellcheck="false"
-      [placeholder]="placeholder"
+      [placeholder]="format.placeholder"
       aria-describedby="import-summary"
       class="w-full resize-y rounded-md border border-border bg-bg px-3 py-2 font-mono text-xs leading-relaxed text-text outline-none placeholder:text-text-muted/60 focus:border-cyan"
     ></textarea>

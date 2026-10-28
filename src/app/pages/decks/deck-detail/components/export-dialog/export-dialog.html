@@ -4,7 +4,7 @@
   size="lg"
   (closed)="closed.emit()"
 >
-  @if (store.rules().hasMana) {
+  @if (styles.length > 1) {
     <div class="mb-3 flex flex-wrap items-center gap-3">
       <div
         class="flex h-9 rounded-md border border-border bg-bg p-0.5 text-sm"
@@ -46,6 +46,19 @@
     (focus)="$any($event.target).select()"
     class="w-full resize-y rounded-md border border-border bg-bg px-3 py-2 font-mono text-xs leading-relaxed text-text outline-none focus:border-cyan"
   ></textarea>
+
+  @if (incomplete().length > 0) {
+    @let missing = incomplete();
+    <p class="mt-2 flex items-start gap-2 text-xs text-text-muted">
+      <svg lucideTriangleAlert [size]="14" class="mt-px shrink-0 text-warning" />
+      <span>
+        {{ missing.length === 1 ? 'Uma carta saiu' : missing.length + ' cartas saíram' }} sem
+        coleção e número (coleções antigas ou promos), e o TCG Live pode não
+        {{ missing.length === 1 ? 'reconhecê-la' : 'reconhecê-las' }}: {{ missing[0].name
+        }}{{ missing.length > 1 ? ' e outras' : '' }}.
+      </span>
+    </p>
+  }
 
   <div dialogFooter class="contents">
     <button

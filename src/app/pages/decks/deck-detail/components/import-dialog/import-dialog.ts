@@ -4,23 +4,16 @@ import { BOARD_SHORT_LABELS } from '../../../../../core/games/game-rules';
 import { Board } from '../../../../../core/models/card.model';
 import { Dialog } from '../../../../../shared/dialog/dialog';
 import { Toasts } from '../../../../../shared/toast/toasts';
-import { parseDeckList } from '../../state/deck-text';
+import { DECK_LIST_FORMATS } from '../../state/deck-list-formats';
 import { DeckStore } from '../../state/deck-store';
 
 /** Same cap as the API (POST /decks/:deckId/cards/import). */
 const MAX_LINES = 250;
 
-const PLACEHOLDER = `4 Lightning Bolt
-4x Counterspell
-2 Fable of the Mirror-Breaker (NEO) 141
-
-Sideboard
-2 Negate`;
-
 /**
- * Paste a list from another site (or MTG Arena) to add it, or to replace the
- * whole deck. The text is read as it's typed, so the user sees what was
- * understood before sending.
+ * Paste a list from another site (MTG Arena, Pokémon TCG Live...) to add it,
+ * or to replace the whole deck. The text is read as it's typed, in the deck's
+ * game format, so the user sees what was understood before sending.
  */
 @Component({
   selector: 'app-import-dialog',
@@ -34,7 +27,7 @@ export class ImportDialog {
   readonly closed = output<void>();
   private readonly dialog = viewChild.required(Dialog);
 
-  protected readonly placeholder = PLACEHOLDER;
+  protected readonly format = DECK_LIST_FORMATS[this.store.deck()?.game ?? 'mtg'];
   protected readonly maxLines = MAX_LINES;
   protected readonly text = signal('');
   protected readonly replace = signal(false);
@@ -42,7 +35,7 @@ export class ImportDialog {
   /** Names the API didn't recognize in the last import; shown instead of closing. */
   protected readonly notFound = signal<string[] | null>(null);
 
-  protected readonly parsed = computed(() => parseDeckList(this.text()));
+  protected readonly parsed = computed(() => this.format.parse(this.text()));
   protected readonly summary = computed(() => {
     const perBoard = new Map<Board, number>();
     for (const entry of this.parsed().entries) {

@@ -1,6 +1,7 @@
 import { Component, input, output } from '@angular/core';
 import { LucideTriangleAlert } from '@lucide/angular';
 import { DeckCard } from '../../../../../core/models/card.model';
+import { thumbnailUrl } from '../../../../../core/utils/card-image-url';
 import { CardImage } from '../../../../../shared/card-image/card-image';
 import { CardGroup } from '../../state/deck-sections';
 
@@ -19,4 +20,7 @@ export class DeckStacksView {
   readonly groups = input.required<CardGroup[]>();
   readonly cardIssues = input.required<ReadonlyMap<string, string>>();
   readonly inspect = output<DeckCard>();
+
+  /** Light scans: a stack loads every card at once. */
+  protected readonly thumbnail = thumbnailUrl;
 }

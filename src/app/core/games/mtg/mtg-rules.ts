@@ -7,6 +7,9 @@ import {
   GameRules,
   GroupingId,
   NO_ISSUES,
+  SortId,
+  compareNames,
+  compareQuantities,
 } from '../game-rules';
 import { COLOR_NAMES, MANA_COLORS, ManaColor, sortColors } from './mana';
 
@@ -54,14 +57,14 @@ export function mtgCardType(typeLine: string): MtgCardType {
   return 'other';
 }
 
-const RARITY_GROUPS: Record<CardRarity, { label: string; order: number }> = {
+const RARITY_GROUPS: Partial<Record<string, { label: string; order: number }>> = {
   mythic: { label: 'Míticas', order: 0 },
   rare: { label: 'Raras', order: 1 },
   uncommon: { label: 'Incomuns', order: 2 },
   common: { label: 'Comuns', order: 3 },
   special: { label: 'Especiais', order: 4 },
   bonus: { label: 'Especiais', order: 4 },
-};
+} satisfies Record<CardRarity, { label: string; order: number }>;
 
 /** Highest mana value with its own group; anything above joins "7+". */
 const CMC_CAP = 7;
@@ -97,10 +100,19 @@ function groupOf(card: DeckCard, grouping: GroupingId): CardGroupInfo {
       const group = card.rarity ? RARITY_GROUPS[card.rarity] : undefined;
       return group ? { key: group.label, ...group } : { key: 'unknown', label: 'Outras', order: 5 };
     }
-    case 'none':
+    // Also the groupings Magic doesn't offer (Pokémon's stage and energy type).
+    default:
       return { key: 'all', label: 'Cartas', order: 0 };
   }
 }
+
+const COMPARATORS: Record<SortId, (a: DeckCard, b: DeckCard) => number> = {
+  cmc: (a, b) => a.cmc - b.cmc || compareNames(a, b),
+  // Not offered: Magic has no evolution lines (the page falls back to the first sort).
+  line: (a, b) => a.cmc - b.cmc || compareNames(a, b),
+  name: compareNames,
+  quantity: compareQuantities,
+};
 
 interface MtgFormat extends DeckFormat {
   /** Main deck plus commander. */
@@ -276,11 +288,19 @@ export const MTG_RULES: GameRules = {
     { id: 'rarity', label: 'Raridade' },
     { id: 'none', label: 'Sem agrupamento' },
   ],
+  sorts: [
+    { id: 'cmc', label: 'Custo' },
+    { id: 'name', label: 'Nome' },
+    { id: 'quantity', label: 'Quantidade' },
+  ],
   formats: MTG_FORMATS,
   hasMana: true,
   boards: (format) =>
     format === 'commander' ? ['commander', 'main', 'maybe'] : ['main', 'side', 'maybe'],
   groupOf,
+  sortCards: (cards, sort) => [...cards].sort(COMPARATORS[sort]),
+  // Scryfall keys `legalities` by the same format ids.
+  legality: (card, formatId) => card.legalities[formatId] ?? 'not_legal',
   isLand: (card) => mtgCardType(card.typeLine) === 'land',
   validate,
 };

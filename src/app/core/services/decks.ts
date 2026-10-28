@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Service, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Board } from '../models/card.model';
 import {
@@ -13,12 +13,14 @@ import {
   ImportResult,
   PublicDeck,
   UpdateDeckPayload,
+  withDeckDefaults,
 } from '../models/deck.model';
 
 /**
  * Every card mutation answers with the whole updated deck, so callers can
  * replace their state instead of patching it (or reloading to learn the
- * internal id of a card they just added).
+ * internal id of a card they just added). Decks come back with every card
+ * completed with the other game's fields (see `withCardDefaults`).
  */
 @Service()
 export class Decks {
@@ -38,7 +40,7 @@ export class Decks {
 
   /** The owner's deck, or anyone's public deck (signed out too). */
   getDeck(deckId: string): Observable<DeckWithCards> {
-    return this.http.get<DeckWithCards>(`${this.baseUrl}/${deckId}`);
+    return this.http.get<DeckWithCards>(`${this.baseUrl}/${deckId}`).pipe(map(withDeckDefaults));
   }
 
   createDeck(payload: CreateDeckPayload): Observable<Deck> {
@@ -46,7 +48,9 @@ export class Decks {
   }
 
   updateDeck(deckId: string, changes: UpdateDeckPayload): Observable<DeckWithCards> {
-    return this.http.patch<DeckWithCards>(`${this.baseUrl}/${deckId}`, changes);
+    return this.http
+      .patch<DeckWithCards>(`${this.baseUrl}/${deckId}`, changes)
+      .pipe(map(withDeckDefaults));
   }
 
   deleteDeck(deckId: string): Observable<void> {
@@ -60,7 +64,9 @@ export class Decks {
 
   /** Adds `quantity` copies (default 1) to `board` (default main). */
   addCard(deckId: string, payload: AddCardPayload): Observable<DeckWithCards> {
-    return this.http.post<DeckWithCards>(`${this.baseUrl}/${deckId}/cards`, payload);
+    return this.http
+      .post<DeckWithCards>(`${this.baseUrl}/${deckId}/cards`, payload)
+      .pipe(map(withDeckDefaults));
   }
 
   /** Exact number of copies in `board`; 0 takes the card out of it. */
@@ -70,11 +76,13 @@ export class Decks {
     board: Board,
     quantity: number,
   ): Observable<DeckWithCards> {
-    return this.http.patch<DeckWithCards>(
-      `${this.baseUrl}/${deckId}/cards/${cardId}`,
-      { quantity },
-      { params: { board } },
-    );
+    return this.http
+      .patch<DeckWithCards>(
+        `${this.baseUrl}/${deckId}/cards/${cardId}`,
+        { quantity },
+        { params: { board } },
+      )
+      .pipe(map(withDeckDefaults));
   }
 
   /** Moves `quantity` copies (default: all) between boards. */
@@ -83,21 +91,22 @@ export class Decks {
     cardId: string,
     move: { from: Board; to: Board; quantity?: number },
   ): Observable<DeckWithCards> {
-    return this.http.post<DeckWithCards>(`${this.baseUrl}/${deckId}/cards/${cardId}/move`, move);
+    return this.http
+      .post<DeckWithCards>(`${this.baseUrl}/${deckId}/cards/${cardId}/move`, move)
+      .pipe(map(withDeckDefaults));
   }
 
   /** Removes one copy from `board`, dropping the card at the last one. */
   removeCard(deckId: string, cardId: string, board: Board = 'main'): Observable<DeckWithCards> {
-    return this.http.delete<DeckWithCards>(`${this.baseUrl}/${deckId}/cards/${cardId}`, {
-      params: { board },
-    });
+    return this.http
+      .delete<DeckWithCards>(`${this.baseUrl}/${deckId}/cards/${cardId}`, { params: { board } })
+      .pipe(map(withDeckDefaults));
   }
 
   /** Adds a pasted list; `replace` swaps the deck's whole content for it. */
   importCards(deckId: string, entries: ImportEntry[], replace: boolean): Observable<ImportResult> {
-    return this.http.post<ImportResult>(`${this.baseUrl}/${deckId}/cards/import`, {
-      entries,
-      replace,
-    });
+    return this.http
+      .post<ImportResult>(`${this.baseUrl}/${deckId}/cards/import`, { entries, replace })
+      .pipe(map((result) => ({ ...result, deck: withDeckDefaults(result.deck) })));
   }
 }

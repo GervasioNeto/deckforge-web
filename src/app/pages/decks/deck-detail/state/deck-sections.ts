@@ -2,17 +2,10 @@ import {
   BOARD_LABELS,
   GameRules,
   GroupingId,
+  SortId,
   sumQuantities,
 } from '../../../../core/games/game-rules';
 import { Board, DeckCard } from '../../../../core/models/card.model';
-
-export type DeckSort = 'cmc' | 'name' | 'quantity';
-
-export const SORT_LABELS: Record<DeckSort, string> = {
-  cmc: 'Custo',
-  name: 'Nome',
-  quantity: 'Quantidade',
-};
 
 export interface CardGroup {
   key: string;
@@ -29,29 +22,15 @@ export interface BoardSection {
   groups: CardGroup[];
 }
 
-const collator = new Intl.Collator('pt-BR', { sensitivity: 'base' });
-
-const byName = (a: DeckCard, b: DeckCard) => collator.compare(a.name, b.name);
-
-const COMPARATORS: Record<DeckSort, (a: DeckCard, b: DeckCard) => number> = {
-  cmc: (a, b) => a.cmc - b.cmc || byName(a, b),
-  name: byName,
-  quantity: (a, b) => b.quantity - a.quantity || byName(a, b),
-};
-
-export function sortCards(cards: readonly DeckCard[], sort: DeckSort): DeckCard[] {
-  return [...cards].sort(COMPARATORS[sort]);
-}
-
 /**
  * The deck as it's displayed: one section per board (in the game's order), each
- * split into groups (by type, cost...). The main deck is always there, even
- * empty; other boards only when they have cards.
+ * split into groups (by type, cost...) sorted the game's way. The main deck is
+ * always there, even empty; other boards only when they have cards.
  */
 export function buildSections(
   cards: readonly DeckCard[],
   rules: GameRules,
-  options: { boards: readonly Board[]; grouping: GroupingId; sort: DeckSort },
+  options: { boards: readonly Board[]; grouping: GroupingId; sort: SortId },
 ): BoardSection[] {
   return options.boards
     .map((board) => {
@@ -74,7 +53,7 @@ export function buildSections(
           .sort((a, b) => a.order - b.order)
           .map(({ order: _order, ...group }) => ({
             ...group,
-            cards: sortCards(group.cards, options.sort),
+            cards: rules.sortCards(group.cards, options.sort),
           })),
       };
     })

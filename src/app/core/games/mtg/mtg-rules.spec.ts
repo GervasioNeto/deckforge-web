@@ -1,10 +1,11 @@
-import { Board, DeckCard } from '../../models/card.model';
+import { Board, DeckCard, withCardDefaults } from '../../models/card.model';
 import { MTG_RULES, deckColors, mtgCardType } from './mtg-rules';
 
 let nextId = 0;
 
 function card(overrides: Partial<DeckCard> & { name: string }): DeckCard {
-  return {
+  // Completed with the Pokémon fields, empty, as the services do with API cards.
+  return withCardDefaults({
     id: `card-${nextId++}`,
     externalId: 'x',
     board: 'main' as Board,
@@ -28,7 +29,7 @@ function card(overrides: Partial<DeckCard> & { name: string }): DeckCard {
     legalities: { standard: 'legal', modern: 'legal', commander: 'legal' },
     scryfallUrl: null,
     ...overrides,
-  };
+  }) as DeckCard;
 }
 
 const swamps = (quantity: number) =>

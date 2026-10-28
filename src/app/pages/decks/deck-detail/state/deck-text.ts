@@ -11,7 +11,8 @@ import { ImportEntry } from '../../../../core/models/deck.model';
  *   2 Negate
  */
 
-export type ExportStyle = 'text' | 'arena';
+/** `arena` is MTG Arena's list; `live` is Pokémon TCG Live's (see pokemon-deck-text.ts). */
+export type ExportStyle = 'text' | 'arena' | 'live';
 
 const SECTION_HEADERS: [RegExp, Board][] = [
   [/^(commander|comandantes?)$/i, 'commander'],

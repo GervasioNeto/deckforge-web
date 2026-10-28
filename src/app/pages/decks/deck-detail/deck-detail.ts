@@ -4,10 +4,13 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { LucideFileUp, LucideSearchX } from '@lucide/angular';
 import { distinctUntilChanged, map, skip } from 'rxjs';
 import { Auth } from '../../../core/auth/auth';
-import { countsTowardDeck } from '../../../core/games/game-rules';
+import { GroupingId, SortId, countsTowardDeck } from '../../../core/games/game-rules';
 import { formatLabel } from '../../../core/games/games';
 import { deckColors } from '../../../core/games/mtg/mtg-rules';
-import { DeckCard } from '../../../core/models/card.model';
+import { TYPE_NAMES } from '../../../core/games/pokemon/energy';
+import { kindLabel } from '../../../core/games/pokemon/pokemon-cards';
+import { DeckCard, PokemonType } from '../../../core/models/card.model';
+import { GameType } from '../../../core/models/deck.model';
 import { normalizeForSearch } from '../../../core/utils/search';
 import { Toasts } from '../../../shared/toast/toasts';
 import { CardDialog } from './components/card-dialog/card-dialog';
@@ -24,11 +27,15 @@ import { DeckToolbar } from './components/deck-toolbar/deck-toolbar';
 import { DeleteDeckDialog } from './components/delete-deck-dialog/delete-deck-dialog';
 import { ExportDialog } from './components/export-dialog/export-dialog';
 import { ImportDialog } from './components/import-dialog/import-dialog';
+import { PokemonDeckStats } from './components/pokemon-deck-stats/pokemon-deck-stats';
+import { PokemonSampleHandDialog } from './components/pokemon-sample-hand-dialog/pokemon-sample-hand-dialog';
 import { SampleHandDialog } from './components/sample-hand-dialog/sample-hand-dialog';
 import { analyzeDeck } from './state/deck-analysis';
 import { buildSections } from './state/deck-sections';
 import { DeckStore } from './state/deck-store';
 import { DeckViewPrefs } from './state/deck-view-prefs';
+import { HeaderStat, mtgHeaderStats, pokemonHeaderStats } from './state/header-stats';
+import { analyzePokemonDeck } from './state/pokemon-deck-analysis';
 
 type DeckDialog = 'settings' | 'import' | 'export' | 'hand' | 'delete';
 
@@ -44,12 +51,14 @@ type DeckDialog = 'settings' | 'import' | 'export' | 'hand' | 'delete';
     DeckStacksView,
     DeckGridView,
     DeckStats,
+    PokemonDeckStats,
     CardPreview,
     CardDialog,
     DeckSettingsDialog,
     ImportDialog,
     ExportDialog,
     SampleHandDialog,
+    PokemonSampleHandDialog,
     DeleteDeckDialog,
     LucideFileUp,
     LucideSearchX,
@@ -68,10 +77,18 @@ export class DeckDetail {
   protected readonly deck = this.store.deck;
   protected readonly rules = this.store.rules;
 
-  /** The saved grouping, unless this game doesn't have it (e.g. "cor" for Pokémon). */
-  protected readonly grouping = computed(() => {
-    const saved = this.prefs.grouping();
-    return this.rules().groupings.some((option) => option.id === saved) ? saved : 'type';
+  protected readonly game = computed<GameType>(() => this.deck()?.game ?? 'mtg');
+
+  /** The game's saved grouping, unless it no longer offers it; else its default. */
+  protected readonly grouping = computed<GroupingId>(() => {
+    const saved = this.prefs.grouping(this.game());
+    const { groupings } = this.rules();
+    return groupings.some((option) => option.id === saved) ? saved! : groupings[0].id;
+  });
+  protected readonly sort = computed<SortId>(() => {
+    const saved = this.prefs.sort(this.game());
+    const { sorts } = this.rules();
+    return sorts.some((option) => option.id === saved) ? saved! : sorts[0].id;
   });
   protected readonly boards = computed(() => this.rules().boards(this.deck()?.format ?? null));
   protected readonly formatName = computed(() => {
@@ -84,16 +101,21 @@ export class DeckDetail {
     const term = normalizeForSearch(this.filter().trim());
     const cards = this.store.cards();
     if (!term) return cards;
-    return cards.filter((card) =>
-      normalizeForSearch(`${card.name} ${card.typeLine}`).includes(term),
-    );
+    const isPokemon = this.game() === 'pokemon';
+    return cards.filter((card) => {
+      // Pokémon cards also match their kind and types in Portuguese ("apoiador", "fogo").
+      const extra = isPokemon
+        ? `${kindLabel(card)} ${card.types.map((type) => TYPE_NAMES[type]).join(' ')}`
+        : '';
+      return normalizeForSearch(`${card.name} ${card.typeLine} ${extra}`).includes(term);
+    });
   });
 
   protected readonly sections = computed(() =>
     buildSections(this.visibleCards(), this.rules(), {
       boards: this.boards(),
       grouping: this.grouping(),
-      sort: this.prefs.sort(),
+      sort: this.sort(),
     }),
   );
   protected readonly isEmpty = computed(() => this.store.cards().length === 0);
@@ -101,12 +123,30 @@ export class DeckDetail {
     () => !this.isEmpty() && this.sections().every((section) => section.count === 0),
   );
 
-  protected readonly analysis = computed(() => analyzeDeck(this.store.cards(), this.rules()));
+  /** Each game reads its deck its own way: Magic's curve and colors, Pokémon's split and odds. */
+  protected readonly mtgAnalysis = computed(() =>
+    this.game() === 'mtg' ? analyzeDeck(this.store.cards(), this.rules()) : null,
+  );
+  protected readonly pokemonAnalysis = computed(() =>
+    this.game() === 'pokemon' ? analyzePokemonDeck(this.store.cards()) : null,
+  );
+  protected readonly headerStats = computed<HeaderStat[]>(() => {
+    const mtg = this.mtgAnalysis();
+    const pokemon = this.pokemonAnalysis();
+    return mtg ? mtgHeaderStats(mtg) : pokemon ? pokemonHeaderStats(pokemon) : [];
+  });
   protected readonly validation = computed(() =>
     this.rules().validate(this.store.cards(), this.deck()?.format ?? null),
   );
   protected readonly colors = computed(() =>
-    this.rules().hasMana ? deckColors(this.store.cards()) : [],
+    this.game() === 'mtg' ? deckColors(this.store.cards()) : [],
+  );
+  /** Pokémon: the deck's types, most played first (up to 4, like the colors of a Magic deck). */
+  protected readonly energyTypes = computed<PokemonType[]>(() =>
+    [...(this.pokemonAnalysis()?.types ?? [])]
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 4)
+      .map((entry) => entry.type),
   );
 
   /** The card under the pointer in the list view; else the cover, else the first card. */

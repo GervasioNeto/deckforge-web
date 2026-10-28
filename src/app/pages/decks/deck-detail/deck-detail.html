@@ -35,10 +35,10 @@
 
   <app-deck-header
     [deck]="d"
-    [analysis]="analysis()"
     [validation]="validation()"
+    [stats]="headerStats()"
     [colors]="colors()"
-    [hasMana]="rules().hasMana"
+    [energyTypes]="energyTypes()"
     (action)="onAction($event)"
   />
 
@@ -50,13 +50,30 @@
     />
   }
 
-  <app-deck-stats class="mt-4 block" [analysis]="analysis()" [game]="d.game" />
+  @if (mtgAnalysis(); as analysis) {
+    <app-deck-stats class="mt-4 block" [analysis]="analysis" [game]="d.game" />
+  } @else if (pokemonAnalysis(); as analysis) {
+    <app-pokemon-deck-stats class="mt-4 block" [analysis]="analysis" />
+  }
 
   <div class="mt-8 space-y-3">
     @if (canEdit) {
-      <app-card-search [boards]="boards()" (importRequested)="dialog.set('import')" />
+      <app-card-search
+        [boards]="boards()"
+        [game]="d.game"
+        [format]="d.format"
+        (importRequested)="dialog.set('import')"
+      />
     }
-    <app-deck-toolbar [groupings]="rules().groupings" [grouping]="grouping()" [(filter)]="filter" />
+    <app-deck-toolbar
+      [groupings]="rules().groupings"
+      [grouping]="grouping()"
+      [sorts]="rules().sorts"
+      [sort]="sort()"
+      [(filter)]="filter"
+      (groupingChange)="prefs.setGrouping(d.game, $event)"
+      (sortChange)="prefs.setSort(d.game, $event)"
+    />
   </div>
 
   <div
@@ -136,7 +153,7 @@
                   <app-deck-list-view
                     [groups]="section.groups"
                     [cardIssues]="validation().cardIssues"
-                    [hasMana]="rules().hasMana"
+                    [game]="d.game"
                     [canEdit]="canEdit"
                     (inspect)="inspected.set($event)"
                     (preview)="onPreview($event)"
@@ -176,7 +193,11 @@
       <app-export-dialog (closed)="dialog.set(null)" />
     }
     @case ('hand') {
-      <app-sample-hand-dialog (closed)="dialog.set(null)" />
+      @if (d.game === 'pokemon') {
+        <app-pokemon-sample-hand-dialog (closed)="dialog.set(null)" />
+      } @else {
+        <app-sample-hand-dialog (closed)="dialog.set(null)" />
+      }
     }
     @case ('delete') {
       <app-delete-deck-dialog

@@ -35,7 +35,7 @@
   >
     <span class="text-text-muted">Agrupar</span>
     <select
-      (change)="prefs.grouping.set($any($event.target).value)"
+      (change)="groupingChange.emit($any($event.target).value)"
       class="h-full cursor-pointer rounded-r-md bg-transparent pr-2 font-medium text-text outline-none"
     >
       @for (option of groupings(); track option.id) {
@@ -51,11 +51,11 @@
   >
     <span class="text-text-muted">Ordenar</span>
     <select
-      (change)="prefs.sort.set($any($event.target).value)"
+      (change)="sortChange.emit($any($event.target).value)"
       class="h-full cursor-pointer rounded-r-md bg-transparent pr-2 font-medium text-text outline-none"
     >
-      @for (sort of sorts; track sort[0]) {
-        <option [value]="sort[0]" [selected]="sort[0] === prefs.sort()">{{ sort[1] }}</option>
+      @for (option of sorts(); track option.id) {
+        <option [value]="option.id" [selected]="option.id === sort()">{{ option.label }}</option>
       }
     </select>
   </label>

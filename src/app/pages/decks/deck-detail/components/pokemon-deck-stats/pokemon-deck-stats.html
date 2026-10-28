@@ -1,0 +1,241 @@
+@let a = analysis();
+
+<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+  @if (a.deckCount === 0) {
+    <p
+      class="rounded-xl border border-dashed border-border p-4 text-sm text-text-muted md:col-span-2 xl:col-span-4"
+    >
+      A composição, os tipos, os Treinadores e as chances de abertura aparecem quando o deck tiver
+      cartas.
+    </p>
+  } @else {
+    <section class="rounded-xl border border-border bg-surface p-4 shadow-card">
+      <h3 class="text-sm font-medium text-text">Composição</h3>
+
+      <div
+        class="mt-3 flex h-2 overflow-hidden rounded-full bg-border"
+        role="img"
+        [attr.aria-label]="
+          categories()[0].count +
+          ' Pokémon, ' +
+          categories()[1].count +
+          ' Treinadores e ' +
+          categories()[2].count +
+          ' Energias'
+        "
+      >
+        @for (category of categories(); track category.key) {
+          @if (category.count > 0) {
+            <span
+              class="h-full not-last:border-r-2 not-last:border-surface"
+              [class]="category.shade"
+              [style.width.%]="category.share * 100"
+            ></span>
+          }
+        }
+      </div>
+      <ul class="mt-3 space-y-1.5 text-sm">
+        @for (category of categories(); track category.key) {
+          <li class="flex items-center gap-2.5">
+            <span class="h-2 w-2 shrink-0 rounded-full" [class]="category.shade"></span>
+            <span class="flex-1 text-text-muted">{{ category.label }}</span>
+            <span class="tabular-nums text-text">{{ category.count }}</span>
+            <span class="w-9 text-right text-xs tabular-nums text-text-muted">
+              {{ category.shareLabel }}
+            </span>
+          </li>
+        }
+      </ul>
+
+      @if (a.stages.length > 0) {
+        <h4 class="mt-4 border-t border-border pt-3 text-xs font-medium text-text-muted">
+          Pokémon por estágio
+        </h4>
+        <ul class="mt-2 space-y-2">
+          @for (stage of a.stages; track stage.key) {
+            <li class="flex items-center gap-2.5 text-sm">
+              <span class="w-28 shrink-0 truncate text-text-muted">{{ stage.label }}</span>
+              <span
+                class="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-border"
+                aria-hidden="true"
+              >
+                <span
+                  class="block h-full rounded-full bg-cyan"
+                  [style.width.%]="(stage.count / stageMax()) * 100"
+                ></span>
+              </span>
+              <span class="w-6 shrink-0 text-right tabular-nums text-text">{{ stage.count }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="rounded-xl border border-border bg-surface p-4 shadow-card">
+      <h3 class="text-sm font-medium text-text">Tipos</h3>
+      @if (types().length > 0) {
+        <ul class="mt-3 space-y-2.5">
+          @for (entry of types(); track entry.type) {
+            <li class="flex items-center gap-2.5 text-sm">
+              <app-energy-symbol [type]="entry.type" decorative />
+              <span class="w-20 shrink-0 truncate text-text-muted">{{ entry.label }}</span>
+              <span
+                class="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-border"
+                aria-hidden="true"
+              >
+                <span
+                  class="block h-full rounded-full bg-cyan"
+                  [style.width.%]="entry.share * 100"
+                ></span>
+              </span>
+              <span class="w-6 shrink-0 text-right tabular-nums text-text">{{ entry.count }}</span>
+              <span class="w-9 shrink-0 text-right text-xs tabular-nums text-text-muted">
+                {{ entry.shareLabel }}
+              </span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="mt-3 text-sm text-text-muted">Nenhum Pokémon no deck ainda.</p>
+      }
+
+      @if (a.energies.length > 0) {
+        <h4 class="mt-4 border-t border-border pt-3 text-xs font-medium text-text-muted">
+          Energias
+        </h4>
+        <ul class="mt-2 space-y-2">
+          @for (energy of a.energies; track energy.key) {
+            <li class="flex items-center gap-2.5 text-sm">
+              @if (energy.type; as type) {
+                <app-energy-symbol [type]="type" decorative />
+              } @else {
+                <span
+                  class="h-4 w-4 shrink-0 rounded-full border border-dashed border-text-muted/50"
+                ></span>
+              }
+              <span class="w-20 shrink-0 truncate text-text-muted">{{ energy.label }}</span>
+              <span
+                class="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-border"
+                aria-hidden="true"
+              >
+                <span
+                  class="block h-full rounded-full bg-text-muted/50"
+                  [style.width.%]="(energy.count / energyMax()) * 100"
+                ></span>
+              </span>
+              <span class="w-6 shrink-0 text-right tabular-nums text-text">{{ energy.count }}</span>
+              <span class="w-9 shrink-0" aria-hidden="true"></span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="rounded-xl border border-border bg-surface p-4 shadow-card">
+      <div class="flex items-baseline justify-between gap-2">
+        <h3 class="text-sm font-medium text-text">Treinadores</h3>
+        @if (a.aceSpecCount > 0) {
+          <span
+            class="rounded-sm bg-text/10 px-1.5 py-px text-[10px] font-semibold tracking-wide text-text"
+          >
+            {{ a.aceSpecCount }} ACE SPEC
+          </span>
+        }
+      </div>
+      @if (a.trainers.length > 0) {
+        <ul class="mt-3 space-y-2">
+          @for (kind of a.trainers; track kind.key) {
+            <li class="flex items-center gap-2.5 text-sm">
+              <span class="w-24 shrink-0 truncate text-text-muted">{{ kind.label }}</span>
+              <span
+                class="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-border"
+                aria-hidden="true"
+              >
+                <span
+                  class="block h-full rounded-full bg-cyan"
+                  [style.width.%]="(kind.count / trainerMax()) * 100"
+                ></span>
+              </span>
+              <span class="w-6 shrink-0 text-right tabular-nums text-text">{{ kind.count }}</span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="mt-3 text-sm text-text-muted">Nenhum Treinador no deck ainda.</p>
+      }
+    </section>
+
+    <section class="rounded-xl border border-border bg-surface p-4 shadow-card">
+      <h3 class="text-sm font-medium text-text">Consistência</h3>
+      <dl class="mt-3 space-y-3.5">
+        <div>
+          <dt class="text-xs text-text-muted">Chance de mulligan</dt>
+          <dd class="mt-0.5 flex items-baseline gap-2">
+            @if (odds().mulligan; as mulligan) {
+              <span
+                class="text-xl font-semibold tabular-nums text-text"
+                title="Chance de a mão inicial de 7 cartas vir sem nenhum Pokémon Básico"
+              >
+                {{ mulligan }}
+              </span>
+              <span class="text-xs text-text-muted">
+                com {{ a.basicCount }} {{ a.basicCount === 1 ? 'Básico' : 'Básicos' }}
+              </span>
+            } @else {
+              <span class="text-sm text-text-muted">
+                {{ a.basicCount === 0 ? 'Sem Pokémon Básico no deck' : 'Menos de 7 cartas' }}
+              </span>
+            }
+          </dd>
+        </div>
+        <div>
+          <dt class="text-xs text-text-muted">Apoiador até o 1º turno</dt>
+          <dd class="mt-0.5 flex items-baseline gap-2">
+            @if (odds().supporter; as supporter) {
+              <span class="text-xl font-semibold tabular-nums text-text">{{ supporter }}</span>
+              <span
+                class="text-xs text-text-muted"
+                title="Entre as 8 primeiras cartas (a mão mantida e a compra do turno), já descontados os mulligans"
+              >
+                na mão inicial ou na 1ª compra
+              </span>
+            } @else {
+              <span class="text-sm text-text-muted">—</span>
+            }
+          </dd>
+        </div>
+        <div>
+          <dt class="text-xs text-text-muted">Pokémon que dão 2+ prêmios</dt>
+          <dd class="mt-0.5 flex items-baseline gap-2">
+            <span class="text-xl font-semibold tabular-nums text-text">{{
+              a.multiPrizeCount
+            }}</span>
+            <span class="text-xs text-text-muted">
+              {{ a.multiPrizeCount === 1 ? 'cópia' : 'cópias' }} de ex, V e afins
+            </span>
+          </dd>
+        </div>
+      </dl>
+
+      <!-- How thick each line is (4-3-3...) is what decides how often it sets up. -->
+      @if (a.lines.length > 0) {
+        <h4 class="mt-4 border-t border-border pt-3 text-xs font-medium text-text-muted">
+          Linhas evolutivas
+        </h4>
+        <ul class="mt-2 space-y-1 text-sm">
+          @for (line of a.lines; track line.root) {
+            <li class="flex items-baseline justify-between gap-3">
+              <span class="truncate text-text">{{ line.root }}</span>
+              <span
+                class="shrink-0 font-medium tabular-nums text-text-muted"
+                title="Cópias de cada Pokémon da linha, do Básico em diante"
+              >
+                {{ line.counts.join('-') }}
+              </span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  }
+</div>

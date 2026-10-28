@@ -9,11 +9,15 @@ import {
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { LucideFileUp, LucideLoaderCircle, LucideSearch } from '@lucide/angular';
-import { catchError, debounceTime, distinctUntilChanged, map, of, switchMap } from 'rxjs';
+import { LucideArrowLeft, LucideFileUp, LucideLoaderCircle, LucideSearch } from '@lucide/angular';
+import { Subject, catchError, debounceTime, distinctUntilChanged, map, of, switchMap } from 'rxjs';
 import { BOARD_SHORT_LABELS } from '../../../../../core/games/game-rules';
-import { Board } from '../../../../../core/models/card.model';
+import { isStandardMark } from '../../../../../core/games/pokemon/pokemon-rules';
+import { Board, CardPrint } from '../../../../../core/models/card.model';
+import { GameType } from '../../../../../core/models/deck.model';
 import { Cards } from '../../../../../core/services/cards';
+import { thumbnailUrl } from '../../../../../core/utils/card-image-url';
+import { CardImage } from '../../../../../shared/card-image/card-image';
 import { Toasts } from '../../../../../shared/toast/toasts';
 import { DeckStore } from '../../state/deck-store';
 
@@ -25,6 +29,11 @@ const ADDED_TO: Record<Board, string> = {
   side: 'ao sideboard',
   maybe: 'ao maybeboard',
   commander: 'como comandante',
+};
+
+const PLACEHOLDERS: Record<GameType, string> = {
+  mtg: 'Adicionar carta — ex.: 4 Lightning Bolt',
+  pokemon: 'Adicionar carta — ex.: 4 Pikachu ex',
 };
 
 /** "4 Lightning Bolt" / "4x Lightning Bolt" → 4 copies; anything else is 1. */
@@ -50,12 +59,17 @@ function highlight(name: string, term: string): { before: string; match: string;
 
 /**
  * The "add a card" bar: an autocomplete combobox (ARIA 1.2 pattern) plus the
- * board new cards go to. Enter adds the highlighted suggestion, or the typed
- * name as is (the API matches it loosely).
+ * board new cards go to.
+ *
+ * Magic: Enter adds the highlighted suggestion, or the typed name as is (the
+ * API matches it loosely). Pokémon: picking a name lists its printings (art,
+ * set and number), newest first, and Enter adds the highlighted one; so two
+ * Enters add the newest printing. A typed name with no suggestion is added as
+ * is (the API takes the newest printing).
  */
 @Component({
   selector: 'app-card-search',
-  imports: [LucideSearch, LucideLoaderCircle, LucideFileUp],
+  imports: [CardImage, LucideSearch, LucideLoaderCircle, LucideFileUp, LucideArrowLeft],
   templateUrl: './card-search.html',
   host: {
     '(document:click)': 'onDocumentClick($event)',
@@ -69,6 +83,9 @@ export class CardSearch {
 
   /** Boards the deck uses; new cards go to `board` (main by default). */
   readonly boards = input.required<readonly Board[]>();
+  readonly game = input.required<GameType>();
+  /** The deck's format: in a Standard Pokémon deck, printings out of Standard are pointed out. */
+  readonly format = input<string | null>(null);
   readonly importRequested = output<void>();
 
   protected readonly boardLabels = BOARD_SHORT_LABELS;
@@ -81,15 +98,25 @@ export class CardSearch {
       ...boards.filter((board) => board === 'commander'),
     ];
   });
+  protected readonly placeholder = computed(() => PLACEHOLDERS[this.game()]);
+  /** Pokémon picks a printing before adding; Magic adds by name. */
+  protected readonly picksPrintings = computed(() => this.game() === 'pokemon');
 
   protected readonly query = signal('');
   protected readonly parsed = computed(() => parseQuery(this.query()));
   protected readonly suggestions = signal<string[]>([]);
   protected readonly loadingSuggestions = signal(false);
   protected readonly open = signal(false);
-  /** Highlighted suggestion; -1 means "use what was typed". */
+  /** Highlighted option (suggestion or printing); -1 means "use what was typed". */
   protected readonly active = signal(-1);
   protected readonly adding = signal(false);
+
+  /** The name whose printings are listed (Pokémon); null while suggesting names. */
+  protected readonly printsOf = signal<string | null>(null);
+  protected readonly prints = signal<CardPrint[]>([]);
+  protected readonly loadingPrints = signal(false);
+  protected readonly printsFailed = signal(false);
+  private readonly printRequests = new Subject<string>();
 
   protected readonly listboxId = 'card-search-listbox';
   private readonly input = viewChild.required<ElementRef<HTMLInputElement>>('input');
@@ -97,6 +124,22 @@ export class CardSearch {
   protected readonly highlighted = computed(() =>
     this.suggestions().map((name) => highlight(name, this.parsed().name)),
   );
+  protected readonly thumbnail = thumbnailUrl;
+  /** Standard goes by the printing (its regulation mark), so it matters which one is picked. */
+  protected readonly checksStandard = computed(
+    () => this.picksPrintings() && this.format() === 'standard',
+  );
+  protected readonly isStandardMark = isStandardMark;
+
+  /** How many options the open list has, in whichever step it is. */
+  private readonly optionCount = computed(() =>
+    this.printsOf() ? this.prints().length : this.suggestions().length,
+  );
+  protected readonly activeId = computed(() => {
+    const index = this.active();
+    if (index < 0) return null;
+    return this.printsOf() ? `${this.listboxId}-print-${index}` : `${this.listboxId}-${index}`;
+  });
 
   constructor() {
     toObservable(computed(() => this.parsed().name))
@@ -109,7 +152,9 @@ export class CardSearch {
           }
           this.loadingSuggestions.set(true);
           // A failed suggestion lookup is silent: Enter still adds the typed name.
-          return this.cardsService.autocomplete(name).pipe(catchError(() => of<string[]>([])));
+          return this.cardsService
+            .autocomplete(name, this.game())
+            .pipe(catchError(() => of<string[]>([])));
         }),
         map((names) => names.slice(0, MAX_SUGGESTIONS)),
         takeUntilDestroyed(),
@@ -117,13 +162,34 @@ export class CardSearch {
       .subscribe((names) => {
         this.loadingSuggestions.set(false);
         this.suggestions.set(names);
-        this.active.set(names.length > 0 ? 0 : -1);
+        if (!this.printsOf()) {
+          this.active.set(names.length > 0 ? 0 : -1);
+        }
+      });
+
+    this.printRequests
+      .pipe(
+        switchMap((name) =>
+          this.cardsService.searchPrints(name, this.game()).pipe(
+            map((prints) => ({ prints, failed: false })),
+            catchError(() => of({ prints: [] as CardPrint[], failed: true })),
+          ),
+        ),
+        takeUntilDestroyed(),
+      )
+      .subscribe(({ prints, failed }) => {
+        this.loadingPrints.set(false);
+        this.printsFailed.set(failed);
+        this.prints.set(prints);
+        this.active.set(prints.length > 0 ? 0 : -1);
       });
   }
 
   protected onInput(value: string): void {
     this.query.set(value);
     this.open.set(true);
+    // Typing again goes back to the names.
+    this.printsOf.set(null);
     if (parseQuery(value).name.length < 2) {
       this.suggestions.set([]);
       this.active.set(-1);
@@ -131,23 +197,30 @@ export class CardSearch {
   }
 
   protected onKeydown(event: KeyboardEvent): void {
-    const count = this.suggestions().length;
+    const count = this.optionCount();
     switch (event.key) {
       case 'ArrowDown':
         event.preventDefault();
         this.open.set(true);
-        if (count) this.active.update((index) => (index + 1) % count);
+        if (count) this.moveActive((index) => (index + 1) % count);
         break;
       case 'ArrowUp':
         event.preventDefault();
-        if (count) this.active.update((index) => (index <= 0 ? count - 1 : index - 1));
+        if (count) this.moveActive((index) => (index <= 0 ? count - 1 : index - 1));
         break;
       case 'Enter':
         event.preventDefault();
-        this.add(this.open() ? this.suggestions()[this.active()] : undefined);
+        if (this.printsOf()) {
+          this.addPrinting(this.prints()[this.active()]);
+        } else {
+          this.choose(this.open() ? this.suggestions()[this.active()] : undefined);
+        }
         break;
       case 'Escape':
-        if (this.open() && count) {
+        if (this.printsOf()) {
+          event.preventDefault();
+          this.closePrints();
+        } else if (this.open() && count) {
           event.preventDefault();
           this.open.set(false);
         } else if (this.query()) {
@@ -158,23 +231,82 @@ export class CardSearch {
     }
   }
 
+  /** A suggestion picked: Pokémon lists its printings; Magic adds it. */
+  protected choose(suggestion?: string): void {
+    if (suggestion && this.picksPrintings()) {
+      this.showPrints(suggestion);
+    } else {
+      void this.add(suggestion);
+    }
+  }
+
+  protected showPrints(name: string): void {
+    this.printsOf.set(name);
+    this.prints.set([]);
+    this.printsFailed.set(false);
+    this.loadingPrints.set(true);
+    this.active.set(-1);
+    this.open.set(true);
+    this.printRequests.next(name);
+  }
+
+  protected closePrints(): void {
+    const name = this.printsOf();
+    this.printsOf.set(null);
+    this.active.set(Math.max(0, this.suggestions().indexOf(name ?? '')));
+    this.input().nativeElement.focus();
+  }
+
+  /** By name: the highlighted suggestion or what was typed. */
   protected async add(suggestion?: string): Promise<void> {
     const { quantity, name: typed } = this.parsed();
     const name = suggestion ?? typed;
     if (!name || this.adding()) {
       return;
     }
-
     const board = this.board();
+    await this.finish(this.store.addByName(name, quantity, board), `${quantity}× ${name}`, board);
+  }
+
+  /** A printing; with none listed (failed or empty), the newest by name. */
+  protected async addPrinting(print?: CardPrint): Promise<void> {
+    const name = this.printsOf();
+    if (!name || this.adding()) {
+      return;
+    }
+    if (!print) {
+      await this.add(name);
+      return;
+    }
+    const { quantity } = this.parsed();
+    const board = this.board();
+    const where = [print.setName, print.collectorNumber ? `#${print.collectorNumber}` : null]
+      .filter(Boolean)
+      .join(' ');
+    await this.finish(
+      this.store.addPrinting(print.externalId, print.name, quantity, board),
+      `${quantity}× ${print.name}${where ? ` (${where})` : ''}`,
+      board,
+    );
+  }
+
+  protected onDocumentClick(event: MouseEvent): void {
+    if (this.open() && !this.host.nativeElement.contains(event.target as Node)) {
+      this.open.set(false);
+    }
+  }
+
+  private async finish(request: Promise<unknown>, added: string, board: Board): Promise<void> {
     this.adding.set(true);
     this.open.set(false);
-    const deck = await this.store.addByName(name, quantity, board);
+    const deck = await request;
     this.adding.set(false);
 
     if (deck) {
-      this.toasts.success(`${quantity}× ${name} adicionada ${ADDED_TO[board]}.`);
+      this.toasts.success(`${added} adicionada ${ADDED_TO[board]}.`);
       this.query.set('');
       this.suggestions.set([]);
+      this.printsOf.set(null);
       this.active.set(-1);
     }
     // Ready for the next card either way (on error, to fix the name).
@@ -183,9 +315,12 @@ export class CardSearch {
     if (!deck) input.select();
   }
 
-  protected onDocumentClick(event: MouseEvent): void {
-    if (this.open() && !this.host.nativeElement.contains(event.target as Node)) {
-      this.open.set(false);
-    }
+  /** Moves the highlight and keeps it in view (the printings list scrolls). */
+  private moveActive(next: (index: number) => number): void {
+    this.active.update(next);
+    queueMicrotask(() => {
+      const id = this.activeId();
+      if (id) this.host.nativeElement.querySelector(`#${id}`)?.scrollIntoView({ block: 'nearest' });
+    });
   }
 }
