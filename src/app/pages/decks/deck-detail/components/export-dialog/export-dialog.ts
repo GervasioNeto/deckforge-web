@@ -1,8 +1,9 @@
 import { Component, ElementRef, computed, inject, output, signal, viewChild } from '@angular/core';
-import { LucideCheck, LucideCopy, LucideDownload } from '@lucide/angular';
+import { LucideCheck, LucideCopy, LucideDownload, LucideTriangleAlert } from '@lucide/angular';
 import { Dialog } from '../../../../../shared/dialog/dialog';
 import { Toasts } from '../../../../../shared/toast/toasts';
-import { ExportStyle, serializeDeckList } from '../../state/deck-text';
+import { DECK_LIST_FORMATS } from '../../state/deck-list-formats';
+import { ExportStyle } from '../../state/deck-text';
 import { DeckStore } from '../../state/deck-store';
 
 /** "Dimir Combo!" → "dimir-combo", for the downloaded file. */
@@ -16,10 +17,13 @@ function fileName(deckName: string): string {
   return `${slug || 'deck'}.txt`;
 }
 
-/** The deck as text, to copy into another site or MTG Arena, or save as a file. */
+/**
+ * The deck as text, in its game's formats (MTG Arena, Pokémon TCG Live...),
+ * to copy into another site or app, or save as a file.
+ */
 @Component({
   selector: 'app-export-dialog',
-  imports: [Dialog, LucideCopy, LucideCheck, LucideDownload],
+  imports: [Dialog, LucideCopy, LucideCheck, LucideDownload, LucideTriangleAlert],
   templateUrl: './export-dialog.html',
 })
 export class ExportDialog {
@@ -29,18 +33,16 @@ export class ExportDialog {
   readonly closed = output<void>();
   private readonly textarea = viewChild<ElementRef<HTMLTextAreaElement>>('output');
 
-  protected readonly style = signal<ExportStyle>('text');
+  private readonly format = DECK_LIST_FORMATS[this.store.deck()?.game ?? 'mtg'];
+  protected readonly styles = this.format.styles;
+  protected readonly style = signal<ExportStyle>(this.styles[0].id);
   protected readonly copied = signal(false);
-  protected readonly text = computed(() => serializeDeckList(this.store.cards(), this.style()));
+  protected readonly text = computed(() => this.format.serialize(this.store.cards(), this.style()));
 
-  protected readonly styles: { id: ExportStyle; label: string; hint: string }[] = [
-    { id: 'text', label: 'Texto', hint: 'Quantidade e nome; funciona na maioria dos sites.' },
-    {
-      id: 'arena',
-      label: 'MTG Arena',
-      hint: 'Com edição e número, pronto para importar no Arena.',
-    },
-  ];
+  /** Lines the chosen style can't write fully, e.g. cards without a set code for Live. */
+  protected readonly incomplete = computed(
+    () => this.format.incomplete?.(this.store.cards(), this.style()) ?? [],
+  );
 
   protected setStyle(style: ExportStyle): void {
     this.style.set(style);

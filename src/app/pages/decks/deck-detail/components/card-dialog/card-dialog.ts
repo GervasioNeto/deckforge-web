@@ -6,13 +6,15 @@ import {
   LucideRefreshCw,
   LucideTriangleAlert,
 } from '@lucide/angular';
-import { BOARD_LABELS } from '../../../../../core/games/game-rules';
+import { BOARD_LABELS, sumQuantities } from '../../../../../core/games/game-rules';
+import { kindLabel, rarityName } from '../../../../../core/games/pokemon/pokemon-cards';
 import { Board, DeckCard, Legality } from '../../../../../core/models/card.model';
 import { CardImage } from '../../../../../shared/card-image/card-image';
 import { Dialog } from '../../../../../shared/dialog/dialog';
 import { ManaCost } from '../../../../../shared/mana-cost/mana-cost';
 import { RulesText } from '../../../../../shared/rules-text/rules-text';
 import { DeckStore } from '../../state/deck-store';
+import { PokemonCardDetails } from '../pokemon-card-details/pokemon-card-details';
 import { QuantityStepper } from '../quantity-stepper/quantity-stepper';
 
 const RARITY_LABELS: Record<string, string> = {
@@ -44,6 +46,7 @@ const LEGALITY: Record<Legality, { label: string; dot: string }> = {
     CardImage,
     ManaCost,
     RulesText,
+    PokemonCardDetails,
     QuantityStepper,
     LucideArrowRightLeft,
     LucideExternalLink,
@@ -89,18 +92,38 @@ export class CardDialog {
   );
   protected readonly isCover = computed(() => this.store.deck()?.coverCardId === this.card().id);
 
+  protected readonly isPokemon = computed(() => this.store.deck()?.game === 'pokemon');
+  /** Pokémon's type line in Portuguese ("Pokémon Estágio 2 · ex"); Magic's as printed. */
+  protected readonly subtitle = computed(() =>
+    this.isPokemon() ? kindLabel(this.card()) : this.card().typeLine,
+  );
+
+  /** Main deck size, and copies of this card in it (every printing of the name), for the prize odds. */
+  protected readonly deckSize = computed(() =>
+    sumQuantities(this.store.cards().filter((card) => card.board === 'main')),
+  );
+  protected readonly copiesInDeck = computed(() => {
+    const name = this.card().name;
+    return sumQuantities(
+      this.store.cards().filter((card) => card.board === 'main' && card.name === name),
+    );
+  });
+
   protected readonly meta = computed(() => {
     const card = this.card();
+    const number = card.collectorNumber;
     return {
       set: [
         card.setName,
-        card.setCode && card.collectorNumber
-          ? `${card.setCode.toUpperCase()} #${card.collectorNumber}`
-          : null,
+        number ? (card.setCode ? `${card.setCode.toUpperCase()} #${number}` : `#${number}`) : null,
       ]
         .filter(Boolean)
         .join(' · '),
-      rarity: card.rarity ? (RARITY_LABELS[card.rarity] ?? card.rarity) : null,
+      rarity: this.isPokemon()
+        ? rarityName(card.rarity)
+        : card.rarity
+          ? (RARITY_LABELS[card.rarity] ?? card.rarity)
+          : null,
       stats: card.loyalty
         ? `Lealdade ${card.loyalty}`
         : card.power !== null && card.toughness !== null
@@ -109,10 +132,12 @@ export class CardDialog {
     };
   });
 
+  /** Per format, by the game's rules (Pokémon's Standard goes by the regulation mark). */
   protected readonly legalities = computed(() => {
-    const legalities = this.card().legalities;
-    return this.store.rules().formats.map((format) => {
-      const status = legalities[format.id] ?? 'not_legal';
+    const card = this.card();
+    const rules = this.store.rules();
+    return rules.formats.map((format) => {
+      const status = rules.legality(card, format.id);
       return {
         id: format.id,
         format: format.label,

@@ -1,5 +1,8 @@
 @let activeIndex = active();
-@let showList = open() && suggestions().length > 0;
+@let printsName = printsOf();
+@let showNames = open() && !printsName && suggestions().length > 0;
+@let showPrints = open() && !!printsName;
+@let expanded = showNames || showPrints;
 
 <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
   <div class="relative min-w-0 flex-1">
@@ -22,16 +25,14 @@
       (focus)="open.set(true)"
       [attr.aria-busy]="adding() ? 'true' : null"
       aria-autocomplete="list"
-      [attr.aria-expanded]="showList"
+      [attr.aria-expanded]="expanded"
       [attr.aria-controls]="listboxId"
-      [attr.aria-activedescendant]="
-        showList && activeIndex >= 0 ? listboxId + '-' + activeIndex : null
-      "
+      [attr.aria-activedescendant]="expanded ? activeId() : null"
       aria-describedby="card-search-hint"
-      placeholder="Adicionar carta — ex.: 4 Lightning Bolt"
+      [placeholder]="placeholder()"
       class="h-10 w-full rounded-md border border-border bg-surface pr-10 pl-9 text-sm text-text outline-none transition-colors placeholder:text-text-muted/70 hover:border-text-muted/40 focus:border-cyan"
     />
-    @if (adding() || loadingSuggestions()) {
+    @if (adding() || loadingSuggestions() || loadingPrints()) {
       <svg
         lucideLoaderCircle
         [size]="16"
@@ -40,10 +41,15 @@
       />
     }
     <p id="card-search-hint" class="sr-only">
-      Digite o nome e pressione Enter. Um número antes do nome define quantas cópias.
+      @if (picksPrintings()) {
+        Digite o nome e escolha uma sugestão para ver as impressões; Enter adiciona a impressão
+        destacada. Um número antes do nome define quantas cópias.
+      } @else {
+        Digite o nome e pressione Enter. Um número antes do nome define quantas cópias.
+      }
     </p>
 
-    @if (showList) {
+    @if (showNames) {
       <ul
         [id]="listboxId"
         role="listbox"
@@ -56,7 +62,7 @@
             role="option"
             [attr.aria-selected]="$index === activeIndex"
             (mousedown)="$event.preventDefault()"
-            (click)="add(suggestions()[$index])"
+            (click)="choose(suggestions()[$index])"
             (mousemove)="active.set($index)"
             class="flex cursor-pointer items-center justify-between gap-3 rounded-md px-3 py-2 text-sm text-text-muted"
             [class.bg-bg]="$index === activeIndex"
@@ -68,15 +74,119 @@
             </span>
             @if ($index === activeIndex) {
               <span class="shrink-0 text-[11px] text-text-muted" aria-hidden="true">
-                @if (parsed().quantity > 1) {
-                  {{ parsed().quantity }}× ·
+                @if (picksPrintings()) {
+                  Enter · ver impressões
+                } @else {
+                  @if (parsed().quantity > 1) {
+                    {{ parsed().quantity }}× ·
+                  }
+                  Enter
                 }
-                Enter
               </span>
             }
           </li>
         }
       </ul>
+    }
+
+    @if (showPrints) {
+      <div
+        class="absolute inset-x-0 top-full z-30 mt-1 overflow-hidden rounded-lg border border-border bg-surface shadow-xl shadow-black/40 light:shadow-black/10"
+      >
+        <div class="flex items-center gap-2 border-b border-border py-1.5 pr-3 pl-1.5">
+          <button
+            type="button"
+            (mousedown)="$event.preventDefault()"
+            (click)="closePrints()"
+            aria-label="Voltar às sugestões"
+            title="Voltar (Esc)"
+            class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-bg hover:text-text"
+          >
+            <svg lucideArrowLeft [size]="15" />
+          </button>
+          <p class="min-w-0 flex-1 truncate text-xs text-text-muted">
+            Impressões de <span class="font-medium text-text">{{ printsName }}</span>
+            @if (!loadingPrints() && prints().length > 0) {
+              <span class="tabular-nums"> · {{ prints().length }}</span>
+            }
+          </p>
+          @if (parsed().quantity > 1) {
+            <span class="shrink-0 text-[11px] text-text-muted tabular-nums">
+              {{ parsed().quantity }}×
+            </span>
+          }
+        </div>
+
+        @if (loadingPrints()) {
+          <p class="px-3 py-4 text-sm text-text-muted" role="status">Buscando impressões...</p>
+        } @else if (prints().length === 0) {
+          <p class="px-3 py-4 text-sm text-text-muted" role="status">
+            @if (printsFailed()) {
+              Não foi possível carregar as impressões.
+            } @else {
+              Nenhuma impressão encontrada com esse nome exato.
+            }
+            Enter adiciona a mais recente pelo nome.
+          </p>
+        } @else {
+          <ul
+            [id]="listboxId"
+            role="listbox"
+            [attr.aria-label]="'Impressões de ' + printsName"
+            class="max-h-80 overflow-y-auto p-1"
+          >
+            @for (print of prints(); track print.externalId) {
+              <li
+                [id]="listboxId + '-print-' + $index"
+                role="option"
+                [attr.aria-selected]="$index === activeIndex"
+                (mousedown)="$event.preventDefault()"
+                (click)="addPrinting(print)"
+                (mousemove)="active.set($index)"
+                class="flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5"
+                [class.bg-bg]="$index === activeIndex"
+              >
+                <app-card-image
+                  [src]="thumbnail(print.imageUrl)"
+                  [name]="print.name"
+                  decorative
+                  class="w-9 shrink-0"
+                />
+                <span class="min-w-0 flex-1">
+                  <span
+                    class="block truncate text-sm"
+                    [class]="$index === activeIndex ? 'text-text' : 'text-text-muted'"
+                  >
+                    {{ print.setName ?? 'Coleção desconhecida' }}
+                  </span>
+                  <span class="flex items-center gap-1.5 text-xs text-text-muted">
+                    @if (print.collectorNumber) {
+                      <span class="tabular-nums">#{{ print.collectorNumber }}</span>
+                    }
+                    @if (print.regulationMark; as mark) {
+                      <span
+                        class="rounded-sm border border-border px-1 text-[10px] font-semibold"
+                        [title]="'Marca de regulação ' + mark"
+                      >
+                        {{ mark }}
+                      </span>
+                    }
+                    @if (checksStandard() && !isStandardMark(print.regulationMark)) {
+                      <span class="text-warning">Fora do Standard</span>
+                    }
+                  </span>
+                </span>
+                @if ($first) {
+                  <span class="shrink-0 text-[11px] text-text-muted">Mais recente</span>
+                }
+                @if ($index === activeIndex) {
+                  <span class="shrink-0 text-[11px] text-text-muted" aria-hidden="true">Enter</span>
+                }
+              </li>
+            }
+          </ul>
+        }
+      </div>
     }
   </div>
 

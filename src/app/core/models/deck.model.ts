@@ -1,4 +1,4 @@
-import type { Board, DeckCard } from './card.model';
+import { Board, DeckCard, withCardDefaults } from './card.model';
 
 export type GameType = 'mtg' | 'pokemon';
 export type DeckVisibility = 'public' | 'private';
@@ -51,6 +51,11 @@ export interface DeckWithCards extends Deck {
   cards: DeckCard[];
 }
 
+/** The deck with every card completed with the other game's fields (see `withCardDefaults`). */
+export function withDeckDefaults(deck: DeckWithCards): DeckWithCards {
+  return { ...deck, cards: deck.cards.map(withCardDefaults) };
+}
+
 /** Shape returned by GET /api/decks/public: someone's public deck, without its cards. */
 export interface PublicDeck extends Deck {
   user: DeckAuthor;
@@ -72,7 +77,7 @@ export interface UpdateDeckPayload {
   coverCardId?: string | null;
 }
 
-/** A card to add: by Scryfall id (from a search) or straight by name. */
+/** A card to add: by external id (a searched card or a picked printing) or straight by name. */
 export type AddCardPayload = ({ externalId: string } | { name: string }) & {
   quantity?: number;
   board?: Board;

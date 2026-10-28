@@ -13,7 +13,11 @@
 <header
   class="relative mt-3 overflow-hidden rounded-xl border border-border bg-surface shadow-card"
 >
-  <!-- Cover art, fading into the surface so the text on the left stays readable. -->
+  <!--
+    Cover art, fading into the surface so the text on the left stays readable.
+    Magic gets Scryfall's art crop; Pokémon has only the whole card, framed on
+    its artwork (the upper third, under the name bar).
+  -->
   @if (coverArt(); as art) {
     <img
       [src]="art"
@@ -21,7 +25,8 @@
       aria-hidden="true"
       decoding="async"
       (error)="onCoverError()"
-      class="absolute inset-y-0 right-0 h-full w-full object-cover object-[center_28%] opacity-40 sm:w-4/5 light:opacity-30"
+      class="absolute inset-y-0 right-0 h-full w-full object-cover opacity-40 sm:w-4/5 light:opacity-30"
+      [class]="d.game === 'pokemon' ? 'object-[center_25%]' : 'object-[center_28%]'"
     />
     <div
       class="absolute inset-0 bg-linear-to-r from-surface from-25% via-surface/85 to-surface/25"
@@ -74,6 +79,12 @@
           >
             @for (pip of colorPips(); track pip.code) {
               <app-mana-pip [symbol]="pip" size="lg" decorative />
+            }
+          </span>
+        } @else if (energyTypes().length > 0) {
+          <span class="flex items-center gap-1" role="img" [attr.aria-label]="energyLabel()">
+            @for (type of energyTypes(); track type) {
+              <app-energy-symbol [type]="type" size="lg" decorative />
             }
           </span>
         }
@@ -198,34 +209,16 @@
   <dl
     class="relative grid grid-cols-2 border-t border-border bg-bg/30 sm:auto-cols-fr sm:grid-flow-col sm:grid-cols-none [&>div]:border-border [&>div]:px-5 [&>div]:py-3 [&>div:nth-child(even)]:border-l [&>div:nth-child(n+3)]:border-t sm:[&>div:nth-child(n+2)]:border-l sm:[&>div:nth-child(n+3)]:border-t-0 sm:[&>div]:px-6"
   >
-    @let a = analysis();
-    <div>
-      <dt class="text-xs text-text-muted">Cartas</dt>
-      <dd class="mt-0.5 text-lg font-semibold text-text">
-        {{ a.deckCount }}
-        @if (a.sideCount > 0) {
-          <span class="text-sm font-normal text-text-muted">+ {{ a.sideCount }} side</span>
-        }
-      </dd>
-    </div>
-    @if (hasMana()) {
+    @for (stat of stats(); track stat.label) {
       <div>
-        <dt class="text-xs text-text-muted">Custo médio</dt>
+        <dt class="truncate text-xs text-text-muted">{{ stat.label }}</dt>
         <dd
-          class="mt-0.5 text-lg font-semibold text-text"
-          title="Média do valor de mana, sem terrenos"
+          class="mt-0.5 text-lg font-semibold tabular-nums text-text"
+          [attr.title]="stat.title ?? null"
         >
-          {{ averageCmc() }}
-        </dd>
-      </div>
-    }
-    @if (hasMana()) {
-      <div>
-        <dt class="text-xs text-text-muted">Terrenos</dt>
-        <dd class="mt-0.5 text-lg font-semibold text-text">
-          {{ lands().count }}
-          @if (lands().share; as share) {
-            <span class="text-sm font-normal text-text-muted">{{ share }} do deck</span>
+          {{ stat.value }}
+          @if (stat.detail) {
+            <span class="text-sm font-normal text-text-muted">{{ stat.detail }}</span>
           }
         </dd>
       </div>

@@ -1,23 +1,12 @@
 import { Component, computed, inject, output, signal } from '@angular/core';
 import { LucideHand, LucidePlus, LucideRotateCcw, LucideShuffle } from '@lucide/angular';
 import { DeckCard } from '../../../../../core/models/card.model';
+import { shuffle } from '../../../../../core/utils/shuffle';
 import { CardImage } from '../../../../../shared/card-image/card-image';
 import { Dialog } from '../../../../../shared/dialog/dialog';
 import { DeckStore } from '../../state/deck-store';
 
 const HAND_SIZE = 7;
-
-/** Fisher–Yates with crypto randomness, so hands aren't biased. */
-function shuffle<T>(items: readonly T[]): T[] {
-  const result = [...items];
-  const random = new Uint32Array(result.length);
-  crypto.getRandomValues(random);
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = random[i] % (i + 1);
-    [result[i], result[j]] = [result[j], result[i]];
-  }
-  return result;
-}
 
 /**
  * Goldfish an opening hand: draw 7 from the main deck, take a mulligan (London

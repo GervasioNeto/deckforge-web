@@ -164,12 +164,29 @@ export class DeckStore {
     });
   }
 
-  /** Adds by name; the API resolves it (fuzzy), so nothing shows until it answers. */
+  /**
+   * Adds by name; the API resolves it (fuzzy on Magic, exact and newest
+   * printing on Pokémon), so nothing shows until it answers.
+   */
   addByName(name: string, quantity: number, board: Board): Promise<DeckWithCards | null> {
     return this.run({
       request: (deckId) => this.decksService.addCard(deckId, { name, quantity, board }),
       errorMessage: `Não foi possível adicionar "${name}".`,
       errorCodes: { CARD_NOT_FOUND: `Nenhuma carta encontrada com o nome "${name}".` },
+    });
+  }
+
+  /** Adds one printing picked from a search; like `addByName`, it shows once the API answers. */
+  addPrinting(
+    externalId: string,
+    name: string,
+    quantity: number,
+    board: Board,
+  ): Promise<DeckWithCards | null> {
+    return this.run({
+      request: (deckId) => this.decksService.addCard(deckId, { externalId, quantity, board }),
+      errorMessage: `Não foi possível adicionar "${name}".`,
+      errorCodes: { CARD_NOT_FOUND: `Essa impressão de "${name}" não foi encontrada.` },
     });
   }
 

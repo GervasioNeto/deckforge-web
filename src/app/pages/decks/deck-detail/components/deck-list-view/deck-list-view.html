@@ -37,8 +37,17 @@
               <svg lucideTriangleAlert [size]="13" class="shrink-0 text-purple" [title]="issue" />
             }
 
-            @if (hasMana()) {
-              <app-mana-cost [cost]="card.manaCost" size="sm" class="max-w-[45%] overflow-hidden" />
+            @switch (game()) {
+              @case ('mtg') {
+                <app-mana-cost
+                  [cost]="card.manaCost"
+                  size="sm"
+                  class="max-w-[45%] overflow-hidden"
+                />
+              }
+              @case ('pokemon') {
+                <app-pokemon-card-tag [card]="card" />
+              }
             }
 
             @if (canEdit()) {

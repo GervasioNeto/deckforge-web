@@ -28,7 +28,9 @@ import {
 import { DeckValidation } from '../../../../../core/games/game-rules';
 import { formatLabel } from '../../../../../core/games/games';
 import { ManaColor, parseManaSymbol } from '../../../../../core/games/mtg/mana';
+import { TYPE_NAMES } from '../../../../../core/games/pokemon/energy';
 import { Auth } from '../../../../../core/auth/auth';
+import { PokemonType } from '../../../../../core/models/card.model';
 import {
   DeckWithCards,
   GAME_LABELS,
@@ -37,22 +39,18 @@ import {
 import { GAME_ACCENTS } from '../../../../../core/theme/game-accents';
 import { formatFullDate, formatRelative } from '../../../../../core/utils/date-format';
 import { artCropFallback, toArtCrop } from '../../../../../core/utils/scryfall-image';
+import { EnergySymbol } from '../../../../../shared/energy-symbol/energy-symbol';
 import { ManaPip } from '../../../../../shared/mana-pip/mana-pip';
-import { DeckAnalysis } from '../../state/deck-analysis';
+import { HeaderStat } from '../../state/header-stats';
 
 export type DeckAction = 'edit' | 'import' | 'export' | 'hand' | 'duplicate' | 'delete' | 'share';
-
-const decimal = new Intl.NumberFormat('pt-BR', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-const percent = new Intl.NumberFormat('pt-BR', { style: 'percent', maximumFractionDigits: 0 });
 
 @Component({
   selector: 'app-deck-header',
   imports: [
     RouterLink,
     ManaPip,
+    EnergySymbol,
     LucideArrowLeft,
     LucideCircleCheck,
     LucideCopy,
@@ -77,10 +75,13 @@ export class DeckHeader {
   protected readonly auth = inject(Auth);
 
   readonly deck = input.required<DeckWithCards>();
-  readonly analysis = input.required<DeckAnalysis>();
   readonly validation = input.required<DeckValidation>();
+  /** The numbers row; the format status always closes it. */
+  readonly stats = input.required<HeaderStat[]>();
+  /** Magic: the deck's colors. */
   readonly colors = input<ManaColor[]>([]);
-  readonly hasMana = input(true);
+  /** Pokémon: the deck's types, most played first. */
+  readonly energyTypes = input<PokemonType[]>([]);
   readonly action = output<DeckAction>();
 
   protected readonly accent = computed(() => GAME_ACCENTS[this.deck().game]);
@@ -90,8 +91,14 @@ export class DeckHeader {
   protected readonly colorPips = computed(() =>
     this.colors().map((color) => parseManaSymbol(color)),
   );
+  protected readonly energyLabel = computed(
+    () =>
+      `Tipos: ${this.energyTypes()
+        .map((type) => TYPE_NAMES[type])
+        .join(', ')}`,
+  );
 
-  /** Artwork only (Scryfall art crop), falling back to the full card if the crop fails. */
+  /** Magic: the art crop, falling back to the full card if it fails. Pokémon: the full card. */
   protected readonly coverArt = linkedSignal(() => {
     const url = this.deck().coverImageUrl;
     return url ? toArtCrop(url) : null;
@@ -107,20 +114,6 @@ export class DeckHeader {
       iso: timestamp,
       label: `${edited ? 'Editado' : 'Criado'} ${formatRelative(date)}`,
       title: formatFullDate(date),
-    };
-  });
-
-  protected readonly averageCmc = computed(() => {
-    const average = this.analysis().averageCmc;
-    return average === null ? '—' : decimal.format(average);
-  });
-
-  /** "25 · 42%": lands in the deck and their share of it. */
-  protected readonly lands = computed(() => {
-    const { landCount, deckCount } = this.analysis();
-    return {
-      count: landCount,
-      share: deckCount > 0 ? percent.format(landCount / deckCount) : null,
     };
   });
 

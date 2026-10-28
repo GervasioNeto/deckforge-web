@@ -1,6 +1,7 @@
 import { Component, inject, input, output } from '@angular/core';
 import { LucideTriangleAlert } from '@lucide/angular';
 import { DeckCard } from '../../../../../core/models/card.model';
+import { thumbnailUrl } from '../../../../../core/utils/card-image-url';
 import { CardImage } from '../../../../../shared/card-image/card-image';
 import { CardGroup } from '../../state/deck-sections';
 import { DeckStore } from '../../state/deck-store';
@@ -19,6 +20,9 @@ export class DeckGridView {
   readonly cardIssues = input.required<ReadonlyMap<string, string>>();
   readonly canEdit = input(false);
   readonly inspect = output<DeckCard>();
+
+  /** Light scans: a grid loads every card at once. */
+  protected readonly thumbnail = thumbnailUrl;
 
   protected step(card: DeckCard, delta: number): void {
     this.store.setQuantity(card, card.quantity + delta);
