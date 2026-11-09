@@ -1,0 +1,121 @@
+<section [attr.aria-busy]="profile.isLoading()">
+  @if (profile.isLoading() && !profile.hasValue()) {
+    <p role="status" class="sr-only">Carregando perfil...</p>
+    <div aria-hidden="true" class="*:animate-pulse *:motion-reduce:animate-none">
+      <div class="mb-8 flex items-center gap-4">
+        <div class="h-16 w-16 shrink-0 rounded-full bg-text/10"></div>
+        <div class="flex-1 space-y-3">
+          <div class="h-6 w-48 max-w-full rounded bg-text/10"></div>
+          <div class="h-3 w-64 max-w-full rounded bg-text/10"></div>
+        </div>
+      </div>
+      <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        @for (i of skeletons; track i) {
+          <li class="overflow-hidden rounded-lg border border-border bg-surface shadow-card">
+            <div class="h-32 border-b border-border bg-text/5"></div>
+            <div class="space-y-4 p-4">
+              <div class="h-4 w-2/3 rounded bg-text/10"></div>
+              <div class="h-3 w-1/2 rounded bg-text/10"></div>
+            </div>
+          </li>
+        }
+      </ul>
+    </div>
+  } @else if (notFound()) {
+    <div
+      class="flex flex-col items-center gap-5 rounded-lg border border-dashed border-border px-6 py-12 text-center"
+    >
+      <app-deck-stack />
+      <div>
+        <h1 class="font-medium text-text">Usuário não encontrado</h1>
+        <p class="mt-1 text-sm text-text-muted">
+          O link pode estar errado ou a conta foi excluída.
+        </p>
+      </div>
+      <a
+        routerLink="/explorar"
+        class="rounded-md bg-gradient-brand px-4 py-2 text-sm font-medium text-on-brand transition-opacity hover:opacity-90"
+      >
+        Explorar decks
+      </a>
+    </div>
+  } @else if (loadError(); as message) {
+    <div role="alert" class="flex flex-wrap items-center gap-3">
+      <p class="text-purple">{{ message }}</p>
+      <button
+        type="button"
+        (click)="profile.reload()"
+        class="rounded-md border border-border px-3 py-1.5 text-sm text-text transition-colors hover:border-cyan"
+      >
+        Tentar novamente
+      </button>
+    </div>
+  } @else if (profile.hasValue()) {
+    @let p = profile.value();
+
+    <header class="mb-8 flex items-center gap-4">
+      <span
+        class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-brand text-2xl font-bold text-on-brand"
+        aria-hidden="true"
+      >
+        {{ initial() }}
+      </span>
+      <div class="min-w-0">
+        <p class="text-xs font-semibold tracking-widest text-cyan uppercase">Perfil</p>
+        <h1 class="mt-1 truncate text-2xl font-bold" [title]="p.name">{{ p.name }}</h1>
+        <p class="mt-1 flex flex-wrap gap-x-2 text-sm text-text-muted">
+          @if (joinedAt(); as joined) {
+            <span>
+              Membro desde
+              <time [attr.datetime]="joined.iso" [title]="joined.title">{{ joined.label }}</time>
+            </span>
+            <span aria-hidden="true">·</span>
+          }
+          <span>{{ deckSummary() }}</span>
+        </p>
+      </div>
+    </header>
+
+    @if (isMe()) {
+      <p
+        class="mb-6 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-border bg-surface px-4 py-3 text-sm text-text-muted"
+      >
+        Este é o seu perfil público: só os decks públicos aparecem aqui.
+        <a routerLink="/perfil" class="font-medium text-cyan hover:underline">Editar perfil</a>
+      </p>
+    }
+
+    @if (p.decks.length === 0) {
+      <div
+        class="flex flex-col items-center gap-5 rounded-lg border border-dashed border-border px-6 py-12 text-center"
+      >
+        <app-deck-stack />
+        @if (isMe()) {
+          <div>
+            <p class="font-medium text-text">Você ainda não tem decks públicos</p>
+            <p class="mt-1 text-sm text-text-muted">
+              Crie um deck com visibilidade <span class="text-text">Público</span> e ele aparece
+              aqui.
+            </p>
+          </div>
+          <a
+            routerLink="/decks/novo"
+            class="rounded-md bg-gradient-brand px-4 py-2 text-sm font-medium text-on-brand transition-opacity hover:opacity-90"
+          >
+            Criar um deck
+          </a>
+        } @else {
+          <p class="font-medium text-text">{{ p.name }} ainda não tem decks públicos</p>
+        }
+      </div>
+    } @else {
+      <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        @for (deck of p.decks; track deck.id) {
+          <li>
+            <app-public-deck-card [deck]="deck" [owned]="isMe()" [linkAuthor]="false" />
+          </li>
+        }
+      </ul>
+    }
+  }
+</section>

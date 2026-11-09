@@ -43,9 +43,20 @@
       >
         {{ authorInitial() }}
       </span>
-      <span class="truncate" [title]="d.user.name">
-        <span class="sr-only">Por </span>{{ owned() ? 'Você' : d.user.name }}
-      </span>
+      @if (linkAuthor()) {
+        <!-- Above the deck link's ::after overlay, so this one stays clickable. -->
+        <a
+          [routerLink]="['/usuarios', d.user.id]"
+          class="relative z-10 truncate rounded-sm outline-none hover:text-text hover:underline focus-visible:ring-2 focus-visible:ring-cyan"
+          [title]="d.user.name"
+        >
+          <span class="sr-only">Por </span>{{ owned() ? 'Você' : d.user.name }}
+        </a>
+      } @else {
+        <span class="truncate" [title]="d.user.name">
+          <span class="sr-only">Por </span>{{ owned() ? 'Você' : d.user.name }}
+        </span>
+      }
       @if (createdAt(); as created) {
         <span aria-hidden="true">·</span>
         <time class="shrink-0" [attr.datetime]="created.iso" [title]="created.title">
