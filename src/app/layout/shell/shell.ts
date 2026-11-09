@@ -93,6 +93,7 @@ export class Shell {
       await this.auth.signOut();
     } finally {
       // The local session is gone even if the server call failed.
+      this.toasts.success('Você saiu da conta.');
       this.router.navigateByUrl('/login');
     }
   }

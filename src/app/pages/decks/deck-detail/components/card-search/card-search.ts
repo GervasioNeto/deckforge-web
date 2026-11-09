@@ -11,7 +11,7 @@ import {
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { LucideArrowLeft, LucideFileUp, LucideLoaderCircle, LucideSearch } from '@lucide/angular';
 import { Subject, catchError, debounceTime, distinctUntilChanged, map, of, switchMap } from 'rxjs';
-import { BOARD_SHORT_LABELS } from '../../../../../core/games/game-rules';
+import { BOARD_PHRASES, BOARD_SHORT_LABELS } from '../../../../../core/games/game-rules';
 import { isStandardMark } from '../../../../../core/games/pokemon/pokemon-rules';
 import { Board, CardPrint } from '../../../../../core/models/card.model';
 import { GameType } from '../../../../../core/models/deck.model';
@@ -23,13 +23,6 @@ import { DeckStore } from '../../state/deck-store';
 
 /** Up to how many suggestions the list shows. */
 const MAX_SUGGESTIONS = 8;
-
-const ADDED_TO: Record<Board, string> = {
-  main: 'ao deck principal',
-  side: 'ao sideboard',
-  maybe: 'ao maybeboard',
-  commander: 'como comandante',
-};
 
 const PLACEHOLDERS: Record<GameType, string> = {
   mtg: 'Adicionar carta — ex.: 4 Lightning Bolt',
@@ -303,7 +296,7 @@ export class CardSearch {
     this.adding.set(false);
 
     if (deck) {
-      this.toasts.success(`${added} adicionada ${ADDED_TO[board]}.`);
+      this.toasts.success(`${added} adicionada ${BOARD_PHRASES[board].to}.`);
       this.query.set('');
       this.suggestions.set([]);
       this.printsOf.set(null);

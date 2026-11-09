@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { environment } from '../../../../../environments/environment';
 import { DeckCard } from '../../../../core/models/card.model';
 import { DeckWithCards } from '../../../../core/models/deck.model';
+import { Toasts } from '../../../../shared/toast/toasts';
 import { DeckStore } from './deck-store';
 
 const DECK_URL = `${environment.apiBaseUrl}/decks/deck-1`;
@@ -97,5 +98,65 @@ describe('DeckStore', () => {
     const req = http.expectOne(`${CARD_URL}/move`);
     expect(req.request.body).toEqual({ from: 'main', to: 'side', quantity: 1 });
     req.flush(deckWith(1));
+  });
+
+  describe('feedback', () => {
+    let success: ReturnType<typeof vi.spyOn>;
+    let error: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      const toasts = TestBed.inject(Toasts);
+      success = vi.spyOn(toasts, 'success');
+      error = vi.spyOn(toasts, 'error');
+    });
+
+    it('announces a removal once the API confirms it', async () => {
+      const result = store.setQuantity(entry(), 0);
+      expect(success).not.toHaveBeenCalled();
+
+      http.expectOne((r) => r.url === CARD_URL).flush({ ...deckWith(0), cards: [] });
+      await result;
+
+      expect(success).toHaveBeenCalledWith('Opt removida do deck principal.');
+    });
+
+    it('stays quiet while the quantity only changes', async () => {
+      const result = store.setQuantity(entry(), 3);
+      http.expectOne((r) => r.url === CARD_URL).flush(deckWith(3));
+      await result;
+
+      expect(success).not.toHaveBeenCalled();
+    });
+
+    it('says where a card was moved, and how many copies when not all of them', async () => {
+      const all = store.move(entry(), 'side');
+      http.expectOne(`${CARD_URL}/move`).flush(deckWith(2));
+      await all;
+      expect(success).toHaveBeenLastCalledWith('Opt movida para o sideboard.');
+
+      const one = store.move(entry(), 'maybe', 1);
+      http.expectOne(`${CARD_URL}/move`).flush(deckWith(1));
+      await one;
+      expect(success).toHaveBeenLastCalledWith('1 cópia de Opt movida para o maybeboard.');
+    });
+
+    it('confirms a new cover', async () => {
+      const result = store.setCover(entry());
+      http.expectOne((r) => r.url === DECK_URL && r.method === 'PATCH').flush(deckWith(2));
+      await result;
+
+      expect(success).toHaveBeenCalledWith('Capa do deck atualizada.');
+    });
+
+    it('shows only the error when the API fails', async () => {
+      const result = store.setQuantity(entry(), 0);
+      http
+        .expectOne((r) => r.url === CARD_URL)
+        .flush({ error: 'INTERNAL_SERVER_ERROR' }, { status: 500, statusText: 'Error' });
+      await result;
+
+      expect(error).toHaveBeenCalledWith('Não foi possível alterar a quantidade.');
+      expect(success).not.toHaveBeenCalled();
+    });
   });
 });
