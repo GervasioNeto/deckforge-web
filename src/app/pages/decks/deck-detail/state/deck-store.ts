@@ -1,6 +1,7 @@
 import { Service, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, Subject, Subscription, catchError, concatMap, map, of } from 'rxjs';
+import { BOARD_PHRASES } from '../../../../core/games/game-rules';
 import { GAME_RULES } from '../../../../core/games/games';
 import { Board, DeckCard } from '../../../../core/models/card.model';
 import {
@@ -112,7 +113,7 @@ export class DeckStore {
   /** Exact copies of an entry; 0 takes it out of its board. */
   setQuantity(entry: DeckCard, quantity: number): Promise<DeckWithCards | null> {
     const next = Math.max(0, quantity);
-    return this.run({
+    const saved = this.run({
       optimistic: (deck) =>
         replaceEntry(deck, entry.id, entry.board, (current) =>
           current && next > 0 ? { ...current, quantity: next } : null,
@@ -121,6 +122,10 @@ export class DeckStore {
       errorMessage: 'Não foi possível alterar a quantidade.',
       errorCodes: CARD_ERRORS,
     });
+    // Only a removal is announced: other counts change right there on screen.
+    return next === 0
+      ? this.announce(saved, `${entry.name} removida ${BOARD_PHRASES[entry.board].from}.`)
+      : saved;
   }
 
   /** ±copies of a card in a board, adding it there if it's new to that board. */
@@ -144,7 +149,12 @@ export class DeckStore {
   /** Moves copies of an entry (default: all) to another board, merging with what's there. */
   move(entry: DeckCard, to: Board, quantity = entry.quantity): Promise<DeckWithCards | null> {
     const moving = Math.min(quantity, entry.quantity);
-    return this.run({
+    const into = BOARD_PHRASES[to].into;
+    const message =
+      moving < entry.quantity
+        ? `${moving} ${moving === 1 ? 'cópia' : 'cópias'} de ${entry.name} ${moving === 1 ? 'movida' : 'movidas'} ${into}.`
+        : `${entry.name} movida ${into}.`;
+    const saved = this.run({
       optimistic: (deck) => {
         const left = replaceEntry(deck, entry.id, entry.board, (current) =>
           current && current.quantity > moving
@@ -162,6 +172,7 @@ export class DeckStore {
       errorMessage: 'Não foi possível mover a carta.',
       errorCodes: CARD_ERRORS,
     });
+    return this.announce(saved, message);
   }
 
   /**
@@ -208,11 +219,12 @@ export class DeckStore {
   }
 
   setCover(card: DeckCard): Promise<DeckWithCards | null> {
-    return this.run({
+    const saved = this.run({
       optimistic: (deck) => ({ ...deck, coverCardId: card.id, coverImageUrl: card.imageUrl }),
       request: (deckId) => this.decksService.updateDeck(deckId, { coverCardId: card.id }),
       errorMessage: 'Não foi possível trocar a capa.',
     });
+    return this.announce(saved, 'Capa do deck atualizada.');
   }
 
   /** Straight to the API (no queue): the page leaves right after. */
@@ -263,6 +275,14 @@ export class DeckStore {
         }
         this.loadingState.set(false);
       },
+    });
+  }
+
+  /** A success toast once the API confirms; a failure already got its error toast in `settle`. */
+  private announce<T>(saved: Promise<T | null>, message: string): Promise<T | null> {
+    return saved.then((result) => {
+      if (result) this.toasts.success(message);
+      return result;
     });
   }
 

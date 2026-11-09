@@ -83,6 +83,18 @@ export const BOARD_LABELS: Record<Board, string> = {
   maybe: 'Maybeboard',
 };
 
+/** How toasts name a board: "adicionada ao…", "removida do…", "movida para o…". */
+export const BOARD_PHRASES: Record<Board, { to: string; from: string; into: string }> = {
+  main: { to: 'ao deck principal', from: 'do deck principal', into: 'para o deck principal' },
+  side: { to: 'ao sideboard', from: 'do sideboard', into: 'para o sideboard' },
+  maybe: { to: 'ao maybeboard', from: 'do maybeboard', into: 'para o maybeboard' },
+  commander: {
+    to: 'como comandante',
+    from: 'da zona de comandante',
+    into: 'para a zona de comandante',
+  },
+};
+
 /** For tight spots: segmented controls, chips. */
 export const BOARD_SHORT_LABELS: Record<Board, string> = {
   commander: 'Comandante',
