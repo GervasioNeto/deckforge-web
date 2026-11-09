@@ -90,7 +90,13 @@
         }
         @if (d.author; as author) {
           <span>
-            por <span class="font-medium text-text">{{ canEdit ? 'você' : author.name }}</span>
+            por
+            <a
+              [routerLink]="['/usuarios', author.id]"
+              class="rounded-sm font-medium text-text outline-none hover:underline focus-visible:ring-2 focus-visible:ring-cyan"
+            >
+              {{ canEdit ? 'você' : author.name }}
+            </a>
           </span>
         }
         @if (activity(); as activity) {

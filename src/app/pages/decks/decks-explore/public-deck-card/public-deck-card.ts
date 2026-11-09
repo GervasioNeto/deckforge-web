@@ -15,6 +15,8 @@ export class PublicDeckCard {
   readonly deck = input.required<PublicDeck>();
   /** The signed-in user's own deck, badged "Seu deck". Every public deck opens its detail page. */
   readonly owned = input(false);
+  /** The author's name opens their profile; off on that profile, where it would lead back. */
+  readonly linkAuthor = input(true);
 
   protected readonly accent = computed(() => GAME_ACCENTS[this.deck().game]);
   protected readonly gameLabel = computed(() => GAME_LABELS[this.deck().game]);
