@@ -129,6 +129,16 @@
         <svg lucideDownload [size]="15" class="text-text-muted" />
         Exportar
       </button>
+      @if (d.visibility === 'public') {
+        <button
+          type="button"
+          (click)="run('share')"
+          class="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-bg/60 px-3 text-sm text-text backdrop-blur transition-colors hover:border-cyan/50"
+        >
+          <svg lucideShare2 [size]="15" class="text-text-muted" />
+          Compartilhar
+        </button>
+      }
 
       @if (canEdit) {
         <button
@@ -166,13 +176,15 @@
               >
                 <svg lucideFileUp [size]="15" /> Importar lista
               </button>
-              <button
-                type="button"
-                (click)="run('share')"
-                class="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-text-muted transition-colors hover:bg-bg hover:text-text"
-              >
-                <svg lucideLink [size]="15" /> Copiar link
-              </button>
+              @if (d.visibility === 'private') {
+                <button
+                  type="button"
+                  (click)="run('share')"
+                  class="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-text-muted transition-colors hover:bg-bg hover:text-text"
+                >
+                  <svg lucideLink [size]="15" /> Copiar link
+                </button>
+              }
               <button
                 type="button"
                 (click)="run('duplicate')"

@@ -8,11 +8,26 @@
     class="relative flex h-32 items-end justify-center overflow-hidden border-b border-border bg-radial-[at_50%_100%] to-transparent to-70%"
     [class]="accent().glowFrom"
   >
-    <app-deck-stack [game]="d.game" class="translate-y-3" />
+    @if (cover(); as url) {
+      <img
+        [src]="url"
+        alt=""
+        loading="lazy"
+        decoding="async"
+        (error)="onCoverError()"
+        class="absolute inset-0 h-full w-full object-cover object-[center_20%]"
+      />
+      <div
+        class="absolute inset-0 bg-linear-to-t from-surface/80 via-transparent to-transparent"
+        aria-hidden="true"
+      ></div>
+    } @else {
+      <app-deck-stack [game]="d.game" class="translate-y-3" />
+    }
 
     <span
       class="absolute top-3 left-3 rounded-full px-2 py-0.5 text-xs font-medium"
-      [class]="accent().badge"
+      [class]="cover() ? 'border border-border bg-bg/80 text-text backdrop-blur' : accent().badge"
     >
       {{ gameLabel() }}
     </span>
@@ -35,6 +50,12 @@
         {{ d.name }}
       </a>
     </h2>
+
+    @if (d.cardCount !== undefined) {
+      <p class="-mt-2 text-xs text-text-muted">
+        {{ d.cardCount }} {{ d.cardCount === 1 ? 'carta' : 'cartas' }}
+      </p>
+    }
 
     <p class="mt-auto flex min-w-0 items-center gap-2 text-xs text-text-muted">
       <span

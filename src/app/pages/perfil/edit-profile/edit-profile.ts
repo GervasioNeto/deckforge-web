@@ -1,7 +1,9 @@
 import { Component, inject, output, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { Auth } from '../../../core/auth/auth';
 import { authErrorMessage } from '../../../core/auth/auth-errors';
+import { UserService } from '../../../core/services/user';
 
 export interface ProfileSaved {
   /** Set when an e-mail change was requested and awaits confirmation. */
@@ -16,6 +18,7 @@ export interface ProfileSaved {
 export class EditProfile {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(Auth);
+  private readonly userService = inject(UserService);
 
   readonly saved = output<ProfileSaved>();
   readonly cancelled = output<void>();
@@ -28,7 +31,11 @@ export class EditProfile {
   private readonly currentEmail = this.auth.currentUser()?.email ?? '';
 
   protected readonly form = this.fb.nonNullable.group({
-    displayName: [this.auth.displayName() ?? '', Validators.maxLength(this.nameMaxLength)],
+    // The pattern rejects names made only of whitespace.
+    displayName: [
+      this.auth.displayName() ?? '',
+      [Validators.required, Validators.pattern(/\S/), Validators.maxLength(this.nameMaxLength)],
+    ],
     email: [this.currentEmail, [Validators.required, Validators.email]],
   });
 
@@ -46,6 +53,8 @@ export class EditProfile {
     const emailChanged = email !== this.currentEmail.toLowerCase();
 
     try {
+      // The API first: it holds the name other players see, so a failure there changes nothing.
+      await firstValueFrom(this.userService.updateMe(displayName));
       await this.auth.updateProfile({ displayName, email: emailChanged ? email : undefined });
       this.saved.emit({ newEmail: emailChanged ? email : null });
     } catch (error) {

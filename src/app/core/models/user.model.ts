@@ -13,6 +13,14 @@ export interface PublicProfile {
   decks: PublicDeck[];
 }
 
+/** One result of GET /api/users/search (never the e-mail). */
+export interface UserSearchResult {
+  id: string;
+  name: string;
+  createdAt: string;
+  publicDeckCount: number;
+}
+
 export interface ApiError {
   error: string;
   message: string;

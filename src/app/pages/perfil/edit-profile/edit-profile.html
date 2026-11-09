@@ -18,7 +18,11 @@
       />
       @if (nameInvalid) {
         <p id="display-name-error" class="mt-1 text-sm text-purple">
-          O nome pode ter no máximo {{ nameMaxLength }} caracteres.
+          @if (form.controls.displayName.hasError('maxlength')) {
+            O nome pode ter no máximo {{ nameMaxLength }} caracteres.
+          } @else {
+            Informe como quer ser chamado.
+          }
         </p>
       }
     </div>

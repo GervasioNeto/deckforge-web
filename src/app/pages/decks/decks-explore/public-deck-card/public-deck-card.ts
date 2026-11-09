@@ -1,8 +1,9 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, input, linkedSignal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { GAME_LABELS, PublicDeck } from '../../../../core/models/deck.model';
 import { GAME_ACCENTS } from '../../../../core/theme/game-accents';
 import { formatFullDate, formatRelative } from '../../../../core/utils/date-format';
+import { artCropFallback, toArtCrop } from '../../../../core/utils/scryfall-image';
 import { DeckStack } from '../../../../shared/deck-stack/deck-stack';
 
 @Component({
@@ -23,6 +24,16 @@ export class PublicDeckCard {
   protected readonly authorInitial = computed(
     () => this.deck().user.name.trim().charAt(0).toUpperCase() || '?',
   );
+
+  protected readonly cover = linkedSignal(() => {
+    const url = this.deck().coverImageUrl;
+    return url ? toArtCrop(url) : null;
+  });
+
+  /** Art crop failed: back to the full card, then to the placeholder stack. */
+  protected onCoverError(): void {
+    this.cover.set(artCropFallback(this.cover()));
+  }
 
   /** "há 2 dias", with the absolute date for the tooltip. */
   protected readonly createdAt = computed(() => {

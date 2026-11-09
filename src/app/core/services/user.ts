@@ -3,7 +3,7 @@ import { Service, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Deck } from '../models/deck.model';
-import { AppUser, PublicProfile } from '../models/user.model';
+import { AppUser, PublicProfile, UserSearchResult } from '../models/user.model';
 
 @Service()
 export class UserService {
@@ -11,6 +11,20 @@ export class UserService {
 
   getMe(): Observable<AppUser> {
     return this.http.get<AppUser>(`${environment.apiBaseUrl}/me`);
+  }
+
+  /** The name other players see on the public profile and on the user's decks. */
+  updateMe(name: string): Observable<AppUser> {
+    return this.http.patch<AppUser>(`${environment.apiBaseUrl}/me`, { name });
+  }
+
+  /** Players whose name matches `query`. Works signed out. */
+  searchUsers(query: string): Observable<UserSearchResult[]> {
+    return this.http
+      .get<{ users: UserSearchResult[] }>(`${environment.apiBaseUrl}/users/search`, {
+        params: { q: query },
+      })
+      .pipe(map(({ users }) => users));
   }
 
   /**
