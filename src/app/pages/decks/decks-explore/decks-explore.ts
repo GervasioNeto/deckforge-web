@@ -1,10 +1,13 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { rxResource, toSignal } from '@angular/core/rxjs-interop';
+import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { catchError, debounceTime, distinctUntilChanged, map, of, switchMap } from 'rxjs';
 import { Auth } from '../../../core/auth/auth';
 import { GAME_LABELS, GameType, isGameType } from '../../../core/models/deck.model';
+import { UserSearchResult } from '../../../core/models/user.model';
 import { Decks } from '../../../core/services/decks';
+import { UserService } from '../../../core/services/user';
 import { GAME_ACCENTS } from '../../../core/theme/game-accents';
 import { apiErrorMessage } from '../../../core/utils/api-error';
 import { normalizeForSearch } from '../../../core/utils/search';
@@ -27,6 +30,7 @@ interface GameFilter {
 export class DecksExplore {
   private readonly route = inject(ActivatedRoute);
   private readonly decksService = inject(Decks);
+  private readonly userService = inject(UserService);
   protected readonly auth = inject(Auth);
 
   protected readonly gameFilters: GameFilter[] = [
@@ -63,6 +67,21 @@ export class DecksExplore {
 
   /** The API has no text search, so this narrows the loaded decks on the client. */
   protected readonly searchTerm = signal('');
+
+  /** Players matching the search, from the API. A failure only hides this section. */
+  protected readonly matchedUsers = toSignal(
+    toObservable(this.searchTerm).pipe(
+      debounceTime(250),
+      map((term) => term.trim()),
+      distinctUntilChanged(),
+      switchMap((term) =>
+        term.length < 2
+          ? of<UserSearchResult[]>([])
+          : this.userService.searchUsers(term).pipe(catchError(() => of<UserSearchResult[]>([]))),
+      ),
+    ),
+    { initialValue: [] as UserSearchResult[] },
+  );
 
   /** Normalized once per response rather than on every keystroke. */
   private readonly searchIndex = computed(() =>

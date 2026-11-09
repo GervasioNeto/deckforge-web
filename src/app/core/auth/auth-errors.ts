@@ -2,6 +2,10 @@ import { isAuthError } from '@supabase/supabase-js';
 
 /** Supabase error codes worth a specific message; anything else gets the caller's fallback. */
 const messages: Record<string, string> = {
+  invalid_credentials: 'E-mail ou senha incorretos.',
+  email_not_confirmed: 'Confirme seu e-mail antes de entrar.',
+  user_already_exists: 'Já existe uma conta com esse e-mail.',
+  over_request_rate_limit: 'Muitas tentativas seguidas. Aguarde alguns minutos e tente de novo.',
   same_password: 'A nova senha precisa ser diferente da atual.',
   weak_password: 'Essa senha é muito fraca. Escolha uma mais forte.',
   reauthentication_needed: 'Por segurança, saia e entre novamente antes de fazer essa alteração.',

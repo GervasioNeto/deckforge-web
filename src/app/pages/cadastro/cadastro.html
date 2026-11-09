@@ -14,27 +14,71 @@
       class="space-y-4 rounded-lg border border-border bg-surface shadow-card p-6"
     >
       <div>
+        @let nameInvalid = form.controls.name.invalid && form.controls.name.touched;
+        <label for="name" class="mb-1 block text-sm text-text-muted">Nome</label>
+        <input
+          id="name"
+          type="text"
+          autocomplete="name"
+          formControlName="name"
+          [attr.maxlength]="nameMaxLength"
+          [attr.aria-invalid]="nameInvalid"
+          aria-describedby="name-hint"
+          class="w-full rounded-md border bg-bg px-3 py-2 text-text outline-none focus:border-cyan"
+          [class.border-border]="!nameInvalid"
+          [class.border-purple]="nameInvalid"
+        />
+        @if (nameInvalid) {
+          <p id="name-hint" class="mt-1 text-sm text-purple">Informe como quer ser chamado.</p>
+        } @else {
+          <p id="name-hint" class="mt-1 text-xs text-text-muted">
+            Aparece no seu perfil público e nos seus decks.
+          </p>
+        }
+      </div>
+
+      <div>
+        @let emailInvalid = form.controls.email.invalid && form.controls.email.touched;
         <label for="email" class="mb-1 block text-sm text-text-muted">E-mail</label>
         <input
           id="email"
           type="email"
+          autocomplete="email"
           formControlName="email"
-          class="w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-cyan"
+          [attr.aria-invalid]="emailInvalid"
+          [attr.aria-describedby]="emailInvalid ? 'email-error' : null"
+          class="w-full rounded-md border bg-bg px-3 py-2 text-text outline-none focus:border-cyan"
+          [class.border-border]="!emailInvalid"
+          [class.border-purple]="emailInvalid"
         />
+        @if (emailInvalid) {
+          <p id="email-error" class="mt-1 text-sm text-purple">Informe um e-mail válido.</p>
+        }
       </div>
 
       <div>
+        @let passwordInvalid = form.controls.password.invalid && form.controls.password.touched;
         <label for="password" class="mb-1 block text-sm text-text-muted">Senha</label>
         <input
           id="password"
           type="password"
+          autocomplete="new-password"
           formControlName="password"
-          class="w-full rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-cyan"
+          [attr.aria-invalid]="passwordInvalid"
+          [attr.aria-describedby]="passwordInvalid ? 'password-error' : null"
+          class="w-full rounded-md border bg-bg px-3 py-2 text-text outline-none focus:border-cyan"
+          [class.border-border]="!passwordInvalid"
+          [class.border-purple]="passwordInvalid"
         />
+        @if (passwordInvalid) {
+          <p id="password-error" class="mt-1 text-sm text-purple">
+            A senha precisa ter pelo menos 6 caracteres.
+          </p>
+        }
       </div>
 
       @if (errorMessage()) {
-        <p class="text-sm text-purple">{{ errorMessage() }}</p>
+        <p role="alert" class="text-sm text-purple">{{ errorMessage() }}</p>
       }
 
       <button

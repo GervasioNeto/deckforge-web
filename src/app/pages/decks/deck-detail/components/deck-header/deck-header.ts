@@ -22,6 +22,7 @@ import {
   LucideLink,
   LucideLock,
   LucidePencil,
+  LucideShare2,
   LucideTrash,
   LucideTriangleAlert,
 } from '@lucide/angular';
@@ -62,6 +63,7 @@ export type DeckAction = 'edit' | 'import' | 'export' | 'hand' | 'duplicate' | '
     LucideLink,
     LucideLock,
     LucidePencil,
+    LucideShare2,
     LucideTrash,
     LucideTriangleAlert,
   ],
