@@ -1,6 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { LucideFileUp, LucideSearchX } from '@lucide/angular';
 import { distinctUntilChanged, map, skip } from 'rxjs';
 import { Auth } from '../../../core/auth/auth';
@@ -12,6 +12,7 @@ import { kindLabel } from '../../../core/games/pokemon/pokemon-cards';
 import { DeckCard, PokemonType } from '../../../core/models/card.model';
 import { GameType } from '../../../core/models/deck.model';
 import { normalizeForSearch } from '../../../core/utils/search';
+import { BackButton } from '../../../shared/back-button/back-button';
 import { Toasts } from '../../../shared/toast/toasts';
 import { CardDialog } from './components/card-dialog/card-dialog';
 import { CardPreview } from './components/card-preview/card-preview';
@@ -42,7 +43,7 @@ type DeckDialog = 'settings' | 'import' | 'export' | 'hand' | 'delete';
 @Component({
   selector: 'app-deck-detail',
   imports: [
-    RouterLink,
+    BackButton,
     DeckHeader,
     DeckIssues,
     DeckToolbar,
@@ -71,7 +72,7 @@ export class DeckDetail {
   protected readonly prefs = inject(DeckViewPrefs);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly auth = inject(Auth);
+  protected readonly auth = inject(Auth);
   private readonly toasts = inject(Toasts);
 
   protected readonly deck = this.store.deck;
