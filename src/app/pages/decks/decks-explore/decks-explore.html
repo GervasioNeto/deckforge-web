@@ -29,7 +29,7 @@
   </div>
 
   <div class="relative sm:w-72">
-    <label for="explore-search" class="sr-only">Buscar decks por nome ou autor</label>
+    <label for="explore-search" class="sr-only">Buscar decks ou jogadores</label>
     <svg
       class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-text-muted"
       viewBox="0 0 20 20"
@@ -47,12 +47,44 @@
       type="search"
       [ngModel]="searchTerm()"
       (ngModelChange)="searchTerm.set($event)"
-      placeholder="Buscar por deck ou autor"
+      placeholder="Buscar decks ou jogadores"
       autocomplete="off"
       class="w-full rounded-md border border-border bg-surface py-2 pr-3 pl-9 text-sm text-text shadow-card outline-none placeholder:text-text-muted focus:border-cyan"
     />
   </div>
 </div>
+
+@if (matchedUsers().length > 0) {
+  <section aria-labelledby="explore-players" class="mb-8">
+    <h2 id="explore-players" class="mb-3 font-semibold text-text">Jogadores</h2>
+    <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      @for (user of matchedUsers(); track user.id) {
+        <li>
+          <a
+            [routerLink]="['/usuarios', user.id]"
+            class="flex items-center gap-3 rounded-lg border border-border bg-surface p-3 shadow-card outline-none transition hover:border-cyan/40 focus-visible:ring-2 focus-visible:ring-cyan"
+          >
+            <span
+              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-brand font-bold text-on-brand"
+              aria-hidden="true"
+            >
+              {{ user.name.trim().charAt(0).toUpperCase() }}
+            </span>
+            <span class="min-w-0">
+              <span class="block truncate font-medium text-text" [title]="user.name">
+                {{ user.name }}
+              </span>
+              <span class="block text-xs text-text-muted">
+                {{ user.publicDeckCount }}
+                {{ user.publicDeckCount === 1 ? 'deck público' : 'decks públicos' }}
+              </span>
+            </span>
+          </a>
+        </li>
+      }
+    </ul>
+  </section>
+}
 
 <section [attr.aria-busy]="decks.isLoading()">
   @if (decks.isLoading() && !decks.hasValue()) {

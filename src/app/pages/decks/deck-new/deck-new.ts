@@ -1,16 +1,17 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { GAME_RULES } from '../../../core/games/games';
 import { DeckVisibility, GameType } from '../../../core/models/deck.model';
 import { Decks } from '../../../core/services/decks';
 import { apiErrorMessage } from '../../../core/utils/api-error';
+import { BackButton } from '../../../shared/back-button/back-button';
 import { Toasts } from '../../../shared/toast/toasts';
 
 @Component({
   selector: 'app-deck-new',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, BackButton],
   templateUrl: './deck-new.html',
 })
 export class DeckNew {
@@ -64,7 +65,8 @@ export class DeckNew {
         next: (deck) => {
           // The shell renders toasts, so this one stays up on the new deck's page.
           this.toasts.success(`Deck "${deck.name}" criado.`);
-          this.router.navigate(['/decks', deck.id]);
+          // The deck takes the form's place in the history, so "Voltar" skips the filled-in form.
+          this.router.navigate(['/decks', deck.id], { replaceUrl: true });
         },
         error: (error) => {
           this.errorMessage.set(apiErrorMessage(error, 'Não foi possível criar o deck.'));

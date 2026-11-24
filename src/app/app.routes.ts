@@ -43,5 +43,11 @@ export const routes: Routes = [
     // Card stacks and grids need more room than the default column (see Shell).
     data: { wide: true },
   },
+  {
+    // No guard: GET /users/:userId works signed out, so authors' profiles open for visitors too.
+    path: 'usuarios/:userId',
+    loadComponent: () =>
+      import('./pages/usuarios/user-profile/user-profile').then((m) => m.UserProfile),
+  },
   { path: '**', redirectTo: 'decks' },
 ];

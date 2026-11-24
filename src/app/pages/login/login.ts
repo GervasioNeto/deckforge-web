@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Auth } from '../../core/auth/auth';
+import { authErrorMessage } from '../../core/auth/auth-errors';
 
 const loginNotices: Record<string, string> = {
   expired: 'Sua sessão expirou. Entre novamente.',
@@ -30,7 +31,7 @@ export class Login {
 
   protected readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6)]],
+    password: ['', Validators.required],
   });
 
   async submit(): Promise<void> {
@@ -48,7 +49,7 @@ export class Login {
       const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/decks';
       await this.router.navigateByUrl(returnUrl);
     } catch (error) {
-      this.errorMessage.set(error instanceof Error ? error.message : 'Não foi possível entrar.');
+      this.errorMessage.set(authErrorMessage(error, 'Não foi possível entrar.'));
     } finally {
       this.loading.set(false);
     }

@@ -11,7 +11,6 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import {
-  LucideArrowLeft,
   LucideCircleCheck,
   LucideCopy,
   LucideDownload,
@@ -22,6 +21,7 @@ import {
   LucideLink,
   LucideLock,
   LucidePencil,
+  LucideShare2,
   LucideTrash,
   LucideTriangleAlert,
 } from '@lucide/angular';
@@ -39,6 +39,7 @@ import {
 import { GAME_ACCENTS } from '../../../../../core/theme/game-accents';
 import { formatFullDate, formatRelative } from '../../../../../core/utils/date-format';
 import { artCropFallback, toArtCrop } from '../../../../../core/utils/scryfall-image';
+import { BackButton } from '../../../../../shared/back-button/back-button';
 import { EnergySymbol } from '../../../../../shared/energy-symbol/energy-symbol';
 import { ManaPip } from '../../../../../shared/mana-pip/mana-pip';
 import { HeaderStat } from '../../state/header-stats';
@@ -49,9 +50,9 @@ export type DeckAction = 'edit' | 'import' | 'export' | 'hand' | 'duplicate' | '
   selector: 'app-deck-header',
   imports: [
     RouterLink,
+    BackButton,
     ManaPip,
     EnergySymbol,
-    LucideArrowLeft,
     LucideCircleCheck,
     LucideCopy,
     LucideDownload,
@@ -62,6 +63,7 @@ export type DeckAction = 'edit' | 'import' | 'export' | 'hand' | 'duplicate' | '
     LucideLink,
     LucideLock,
     LucidePencil,
+    LucideShare2,
     LucideTrash,
     LucideTriangleAlert,
   ],

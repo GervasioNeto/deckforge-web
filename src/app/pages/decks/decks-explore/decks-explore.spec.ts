@@ -109,12 +109,23 @@ describe('DecksExplore', () => {
   it('links every public deck and marks the signed-in user’s own', async () => {
     await respond(await open('/explorar'), DECKS);
 
-    const links = [...page().querySelectorAll<HTMLAnchorElement>('app-public-deck-card a')];
+    const links = [...page().querySelectorAll<HTMLAnchorElement>('app-public-deck-card h2 a')];
     expect(links.map((link) => link.getAttribute('href')).sort()).toEqual([
       '/decks/deck-1',
       '/decks/deck-2',
     ]);
     expect(page().textContent).toContain('Seu deck');
+  });
+
+  it("links each author's name to their profile", async () => {
+    await respond(await open('/explorar'), DECKS);
+
+    const authors = [...page().querySelectorAll<HTMLAnchorElement>('app-public-deck-card p a')];
+    expect(authors.map((link) => link.getAttribute('href'))).toEqual([
+      '/usuarios/user-1',
+      '/usuarios/me',
+    ]);
+    expect(authors.map((link) => link.textContent!.trim())).toEqual(['Por Emerson', 'Por Você']);
   });
 
   it('passes the game from the URL to the API', async () => {

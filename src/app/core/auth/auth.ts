@@ -57,9 +57,19 @@ export class Auth {
     return this.readyPromise;
   }
 
-  async signUp(email: string, password: string): Promise<void> {
-    const { error } = await this.supabase.auth.signUp({ email, password });
+  /**
+   * `name` is what the database trigger copies to the public profile.
+   * Resolves to whether the account is already signed in; false means it
+   * still has to be confirmed by e-mail.
+   */
+  async signUp(name: string, email: string, password: string): Promise<boolean> {
+    const { data, error } = await this.supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name, display_name: name } },
+    });
     if (error) throw error;
+    return data.session !== null;
   }
 
   async signIn(email: string, password: string): Promise<void> {

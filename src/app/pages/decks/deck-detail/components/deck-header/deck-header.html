@@ -2,13 +2,10 @@
 @let canEdit = d.isOwner;
 @let state = status();
 
-<a
-  [routerLink]="canEdit ? '/decks' : '/explorar'"
-  class="inline-flex items-center gap-1 text-sm text-text-muted transition-colors hover:text-text"
->
-  <svg lucideArrowLeft [size]="15" />
-  {{ canEdit ? 'Meus Decks' : 'Explorar' }}
-</a>
+<app-back-button
+  [label]="canEdit ? 'Meus Decks' : 'Explorar'"
+  [fallback]="canEdit ? '/decks' : '/explorar'"
+/>
 
 <header
   class="relative mt-3 overflow-hidden rounded-xl border border-border bg-surface shadow-card"
@@ -90,7 +87,13 @@
         }
         @if (d.author; as author) {
           <span>
-            por <span class="font-medium text-text">{{ canEdit ? 'você' : author.name }}</span>
+            por
+            <a
+              [routerLink]="['/usuarios', author.id]"
+              class="rounded-sm font-medium text-text outline-none hover:underline focus-visible:ring-2 focus-visible:ring-cyan"
+            >
+              {{ canEdit ? 'você' : author.name }}
+            </a>
           </span>
         }
         @if (activity(); as activity) {
@@ -123,6 +126,16 @@
         <svg lucideDownload [size]="15" class="text-text-muted" />
         Exportar
       </button>
+      @if (d.visibility === 'public') {
+        <button
+          type="button"
+          (click)="run('share')"
+          class="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-bg/60 px-3 text-sm text-text backdrop-blur transition-colors hover:border-cyan/50"
+        >
+          <svg lucideShare2 [size]="15" class="text-text-muted" />
+          Compartilhar
+        </button>
+      }
 
       @if (canEdit) {
         <button
@@ -160,13 +173,15 @@
               >
                 <svg lucideFileUp [size]="15" /> Importar lista
               </button>
-              <button
-                type="button"
-                (click)="run('share')"
-                class="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-text-muted transition-colors hover:bg-bg hover:text-text"
-              >
-                <svg lucideLink [size]="15" /> Copiar link
-              </button>
+              @if (d.visibility === 'private') {
+                <button
+                  type="button"
+                  (click)="run('share')"
+                  class="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-text-muted transition-colors hover:bg-bg hover:text-text"
+                >
+                  <svg lucideLink [size]="15" /> Copiar link
+                </button>
+              }
               <button
                 type="button"
                 (click)="run('duplicate')"
