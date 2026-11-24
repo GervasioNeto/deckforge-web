@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { GAME_RULES } from '../../../core/games/games';
 import { DeckVisibility, GameType } from '../../../core/models/deck.model';
 import { Decks } from '../../../core/services/decks';
+import { apiErrorMessage } from '../../../core/utils/api-error';
 import { Toasts } from '../../../shared/toast/toasts';
 
 @Component({
@@ -65,8 +66,8 @@ export class DeckNew {
           this.toasts.success(`Deck "${deck.name}" criado.`);
           this.router.navigate(['/decks', deck.id]);
         },
-        error: () => {
-          this.errorMessage.set('Não foi possível criar o deck.');
+        error: (error) => {
+          this.errorMessage.set(apiErrorMessage(error, 'Não foi possível criar o deck.'));
           this.loading.set(false);
         },
       });

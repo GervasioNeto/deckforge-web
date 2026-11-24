@@ -5,7 +5,9 @@ import { Deck, GAME_LABELS, GameType } from '../../core/models/deck.model';
 import { AppUser } from '../../core/models/user.model';
 import { Decks } from '../../core/services/decks';
 import { UserService } from '../../core/services/user';
+import { apiErrorMessage } from '../../core/utils/api-error';
 import { formatFullDate, formatLongDate, formatRelative } from '../../core/utils/date-format';
+import { Toasts } from '../../shared/toast/toasts';
 import { ChangePassword } from './change-password/change-password';
 import { EditProfile, ProfileSaved } from './edit-profile/edit-profile';
 import { SignOutEverywhere } from './sign-out-everywhere/sign-out-everywhere';
@@ -19,6 +21,7 @@ export class Perfil implements OnInit {
   private readonly userService = inject(UserService);
   private readonly decksService = inject(Decks);
   private readonly auth = inject(Auth);
+  private readonly toasts = inject(Toasts);
 
   protected readonly user = signal<AppUser | null>(null);
   protected readonly loading = signal(true);
@@ -39,20 +42,23 @@ export class Perfil implements OnInit {
   protected readonly pendingEmail = this.auth.pendingEmail;
 
   protected readonly editing = signal(false);
-  protected readonly profileNotice = signal<string | null>(null);
+  /** Stays inline: it is long and asks for an action, a toast would vanish too soon. */
+  protected readonly emailNotice = signal<string | null>(null);
 
   protected startEditing(): void {
-    this.profileNotice.set(null);
+    this.emailNotice.set(null);
     this.editing.set(true);
   }
 
   protected onProfileSaved({ newEmail }: ProfileSaved): void {
     this.editing.set(false);
-    this.profileNotice.set(
-      newEmail
-        ? `Perfil salvo. Enviamos um link de confirmação para ${newEmail} (e pode ser preciso confirmar também no e-mail atual). O e-mail só muda depois disso.`
-        : 'Perfil atualizado.',
-    );
+    if (newEmail) {
+      this.emailNotice.set(
+        `Perfil salvo. Enviamos um link de confirmação para ${newEmail} (e pode ser preciso confirmar também no e-mail atual). O e-mail só muda depois disso.`,
+      );
+    } else {
+      this.toasts.success('Perfil atualizado.');
+    }
   }
 
   protected readonly memberSince = computed(() => {
@@ -104,8 +110,8 @@ export class Perfil implements OnInit {
         this.user.set(user);
         this.loading.set(false);
       },
-      error: () => {
-        this.errorMessage.set('Não foi possível carregar seu perfil.');
+      error: (error) => {
+        this.errorMessage.set(apiErrorMessage(error, 'Não foi possível carregar seu perfil.'));
         this.loading.set(false);
       },
     });
@@ -119,8 +125,8 @@ export class Perfil implements OnInit {
         this.decks.set(decks);
         this.decksLoading.set(false);
       },
-      error: () => {
-        this.decksError.set('Não foi possível carregar sua atividade.');
+      error: (error) => {
+        this.decksError.set(apiErrorMessage(error, 'Não foi possível carregar sua atividade.'));
         this.decksLoading.set(false);
       },
     });
