@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { GAME_RULES } from '../../../core/games/games';
 import { DeckVisibility, GameType } from '../../../core/models/deck.model';
 import { Decks } from '../../../core/services/decks';
+import { apiErrorMessage } from '../../../core/utils/api-error';
 import { BackButton } from '../../../shared/back-button/back-button';
 import { Toasts } from '../../../shared/toast/toasts';
 
@@ -67,8 +68,8 @@ export class DeckNew {
           // The deck takes the form's place in the history, so "Voltar" skips the filled-in form.
           this.router.navigate(['/decks', deck.id], { replaceUrl: true });
         },
-        error: () => {
-          this.errorMessage.set('Não foi possível criar o deck.');
+        error: (error) => {
+          this.errorMessage.set(apiErrorMessage(error, 'Não foi possível criar o deck.'));
           this.loading.set(false);
         },
       });

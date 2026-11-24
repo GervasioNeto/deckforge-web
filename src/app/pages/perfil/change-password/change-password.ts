@@ -9,6 +9,7 @@ import {
 } from '@angular/forms';
 import { Auth } from '../../../core/auth/auth';
 import { authErrorMessage } from '../../../core/auth/auth-errors';
+import { Toasts } from '../../../shared/toast/toasts';
 
 const passwordsMatch: ValidatorFn = (group: AbstractControl): ValidationErrors | null => {
   const password = group.get('password')?.value;
@@ -24,10 +25,10 @@ const passwordsMatch: ValidatorFn = (group: AbstractControl): ValidationErrors |
 export class ChangePassword {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(Auth);
+  private readonly toasts = inject(Toasts);
 
   protected readonly loading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
-  protected readonly success = signal(false);
 
   /** Same rule as the sign-up form. */
   protected readonly minLength = 6;
@@ -48,12 +49,11 @@ export class ChangePassword {
 
     this.loading.set(true);
     this.errorMessage.set(null);
-    this.success.set(false);
 
     try {
       await this.auth.updatePassword(this.form.getRawValue().password);
       this.form.reset();
-      this.success.set(true);
+      this.toasts.success('Senha alterada.');
     } catch (error) {
       this.errorMessage.set(authErrorMessage(error, 'Não foi possível alterar a senha.'));
     } finally {

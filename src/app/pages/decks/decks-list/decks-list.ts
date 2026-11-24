@@ -2,6 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Deck, GAME_LABELS, GameType, VISIBILITY_LABELS } from '../../../core/models/deck.model';
 import { Decks } from '../../../core/services/decks';
+import { apiErrorMessage } from '../../../core/utils/api-error';
 import { formatFullDate, formatRelative } from '../../../core/utils/date-format';
 import { Toasts } from '../../../shared/toast/toasts';
 import { DeckCover, DeckStats } from './deck-cover/deck-cover';
@@ -113,8 +114,8 @@ export class DecksList implements OnInit {
         this.decks.set(decks);
         this.loading.set(false);
       },
-      error: () => {
-        this.errorMessage.set('Não foi possível carregar seus decks.');
+      error: (error) => {
+        this.errorMessage.set(apiErrorMessage(error, 'Não foi possível carregar seus decks.'));
         this.loading.set(false);
       },
     });
@@ -137,8 +138,8 @@ export class DecksList implements OnInit {
         this.deletingId.set(null);
         this.toasts.success(`Deck "${deck.name}" excluído.`);
       },
-      error: () => {
-        this.toasts.error('Não foi possível excluir o deck. Tente novamente.');
+      error: (error) => {
+        this.toasts.error(apiErrorMessage(error, 'Não foi possível excluir o deck. Tente novamente.'));
         this.confirmingDeleteId.set(null);
         this.deletingId.set(null);
       },
