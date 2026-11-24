@@ -7,6 +7,7 @@ import { Auth } from '../../../core/auth/auth';
 import { UserService } from '../../../core/services/user';
 import { apiErrorMessage } from '../../../core/utils/api-error';
 import { formatFullDate, formatLongDate } from '../../../core/utils/date-format';
+import { BackButton } from '../../../shared/back-button/back-button';
 import { DeckStack } from '../../../shared/deck-stack/deck-stack';
 import { PublicDeckCard } from '../../decks/decks-explore/public-deck-card/public-deck-card';
 
@@ -16,7 +17,7 @@ import { PublicDeckCard } from '../../decks/decks-explore/public-deck-card/publi
  */
 @Component({
   selector: 'app-user-profile',
-  imports: [RouterLink, DeckStack, PublicDeckCard],
+  imports: [RouterLink, BackButton, DeckStack, PublicDeckCard],
   templateUrl: './user-profile.html',
 })
 export class UserProfile {

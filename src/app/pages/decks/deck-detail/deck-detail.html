@@ -22,12 +22,12 @@
   >
     <svg lucideSearchX [size]="32" class="text-text-muted" />
     <p class="text-text">{{ error }}</p>
-    <a
-      routerLink="/decks"
-      class="rounded-md border border-border px-3 py-1.5 text-sm text-text transition-colors hover:border-cyan"
-    >
-      Voltar para Meus Decks
-    </a>
+    <!-- Signed out, /decks would only lead to the login page. -->
+    @let signedIn = auth.isAuthenticated();
+    <app-back-button
+      [label]="signedIn ? 'Meus Decks' : 'Explorar'"
+      [fallback]="signedIn ? '/decks' : '/explorar'"
+    />
   </div>
 } @else if (deck(); as d) {
   @let canEdit = store.canEdit();

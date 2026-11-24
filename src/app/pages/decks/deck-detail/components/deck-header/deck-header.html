@@ -2,13 +2,10 @@
 @let canEdit = d.isOwner;
 @let state = status();
 
-<a
-  [routerLink]="canEdit ? '/decks' : '/explorar'"
-  class="inline-flex items-center gap-1 text-sm text-text-muted transition-colors hover:text-text"
->
-  <svg lucideArrowLeft [size]="15" />
-  {{ canEdit ? 'Meus Decks' : 'Explorar' }}
-</a>
+<app-back-button
+  [label]="canEdit ? 'Meus Decks' : 'Explorar'"
+  [fallback]="canEdit ? '/decks' : '/explorar'"
+/>
 
 <header
   class="relative mt-3 overflow-hidden rounded-xl border border-border bg-surface shadow-card"
